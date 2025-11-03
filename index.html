@@ -1,1586 +1,658 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Progetto Thunder - Documento di Progettazione Software</title>
-    <style>
-        :root {
-            /* Palette dal documento */
-            --bg-primary: #0a0e14;
-            --bg-secondary: #13171d;
-            --bg-tertiary: #1a1f29;
-            --bg-elevated: #212730;
-            --border-primary: #2d3541;
-            --border-secondary: #3d4552;
-            --text-primary: #e6e8eb;
-            --text-secondary: #9ca3af;
-            --text-tertiary: #6b7280;
-            --status-critical: #dc2626;
-            --status-high: #f59e0b;
-            --status-medium: #3b82f6;
-            --status-low: #10b981;
-            --color-success: #10b981;
-            --color-warning: #f59e0b;
-            --color-error: #dc2626;
-            --color-info: #3b82f6;
-            --accent-primary: #2563eb;
-            --accent-secondary: #7c3aed;
-            --accent-hover: #3b82f6;
-            --squad-available: #10b981;
-            --squad-busy: #f59e0b;
-            --squad-offline: #6b7280;
-            --squad-returning: #3b82f6;
-            /* Font dal documento */
-            --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
-        }
+    <title>Thunder - Sala Operativa Protezione Civile</title>
+    
+    <!-- Caricamento delle librerie da CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/dexie@3/dist/dexie.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1/dayjs.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1/locale/it.js"></script>
+    <script src="https://unpkg.com/heroicons@2/24/outline/index.js"></script>
 
-        /* Reset e Stili Base */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-main);
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.7;
-            font-size: 16px;
-        }
-
-        /* Layout Principale */
-        .container {
-            display: flex;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        #toc-container {
-            flex: 0 0 280px;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-            padding: 40px 20px;
-            border-right: 1px solid var(--border-primary);
-        }
-        
-        #toc-container h3 {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        #toc {
-            list-style: none;
-        }
-
-        #toc li a {
-            display: block;
-            padding: 8px 12px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-left: 2px solid transparent;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        #toc li a:hover {
-            color: var(--text-primary);
-            background-color: var(--bg-secondary);
-        }
-
-        #toc li a.active {
-            color: var(--accent-hover);
-            border-left-color: var(--accent-hover);
-            background-color: rgba(59, 130, 246, 0.1);
-            font-weight: 500;
-        }
-
-        main {
-            flex-grow: 1;
-            padding: 40px 50px;
-            max-width: calc(100% - 280px);
-        }
-
-        /* Tipografia */
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--text-primary);
-            line-height: 1.3;
-            margin-bottom: 1rem;
-            margin-top: 2rem;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            border-bottom: 1px solid var(--border-primary);
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        h1 small {
-            display: block;
-            font-size: 1.2rem;
-            font-weight: 400;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-
-        h2 {
-            font-size: 1.8rem;
-            padding-bottom: 0.8rem;
-            border-bottom: 1px solid var(--border-primary);
-            margin-top: 3.5rem;
-        }
-
-        h3 {
-            font-size: 1.4rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            margin-top: 2.5rem;
-        }
-
-        p {
-            margin-bottom: 1rem;
-            color: var(--text-secondary);
-        }
-
-        strong {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        a {
-            color: var(--accent-primary);
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        hr {
-            border: 0;
-            border-top: 1px solid var(--border-primary);
-            margin: 3rem 0;
-        }
-
-        ul, ol {
-            padding-left: 20px;
-            margin-bottom: 1rem;
-            color: var(--text-secondary);
-        }
-
-        li {
-            margin-bottom: 0.5rem;
-        }
-        
-        ul ul, ol ol {
-            margin-top: 0.5rem;
-        }
-
-        /* Stili per il codice */
-        pre {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            padding: 1.2rem;
-            overflow-x: auto;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-
-        code {
-            font-family: var(--font-mono);
-            background-color: var(--bg-tertiary);
-            padding: 0.2em 0.4em;
-            border-radius: 4px;
-            color: var(--text-primary);
-        }
-
-        pre code {
-            background-color: transparent;
-            padding: 0;
-            border-radius: 0;
-            color: inherit;
-        }
-
-        /* Evidenziazione sintassi */
-        .token.comment { color: #6a9955; }
-        .token.string { color: #ce9178; }
-        .token.punctuation { color: #d4d4d4; }
-        .token.keyword { color: #569cd6; }
-        .token.number { color: #b5cea8; }
-        .token.boolean { color: #569cd6; }
-        .token.property { color: #9cdcfe; }
-        .token.function { color: #dcdcaa; }
-        .token.tag { color: #569cd6; }
-        .token.attr-name { color: #9cdcfe; }
-        .token.attr-value { color: #ce9178; }
-        .token.selector { color: #d7ba7d; }
-        .token.rule { color: #c586c0; }
-
-        /* Stili per i componenti UI (Sezione 5) */
-        .ui-preview {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            padding: 2rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 0.6rem 1.2rem;
-            border-radius: 6px;
-            border: 1px solid transparent;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s;
-            font-size: 0.9rem;
-        }
-        .btn-primary { background-color: var(--accent-primary); color: white; border-color: var(--accent-primary); }
-        .btn-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
-        .btn-secondary { background-color: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-secondary); }
-        .btn-secondary:hover { background-color: var(--bg-tertiary); border-color: var(--border-primary); }
-        .btn-danger { background-color: var(--status-critical); color: white; border-color: var(--status-critical); }
-        .btn-icon { padding: 0.6rem; line-height: 1; }
-        .btn-icon svg { width: 1.2rem; height: 1.2rem; }
-
-        .card {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .card-header, .card-body, .card-footer { padding: 1rem 1.5rem; }
-        .card-header { border-bottom: 1px solid var(--border-primary); display: flex; justify-content: space-between; align-items: center; }
-        .card-title { font-size: 1.2rem; margin: 0; color: var(--text-primary); }
-        .card-footer { border-top: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 0.9rem;}
-
-        .badge {
-            display: inline-block;
-            padding: 0.3em 0.8em;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 999px;
-            line-height: 1;
-        }
-        .badge-critical { background-color: var(--status-critical); color: white; }
-        .badge-high { background-color: var(--status-high); color: #1f2937; }
-        .badge-medium { background-color: var(--status-medium); color: white; }
-        .badge-low { background-color: var(--status-low); color: white; }
-        .badge-status-open, .badge-status-progress, .badge-status-closed { color: white; }
-        .badge-status-open { background-color: var(--status-high); }
-        .badge-status-progress { background-color: var(--status-medium); }
-        .badge-status-closed { background-color: var(--text-tertiary); }
-
-        .form-group { margin-bottom: 1rem; }
-        .form-label { display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
-        .form-input, .form-select, .form-textarea {
-            width: 100%;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 6px;
-            padding: 0.7rem 1rem;
-            color: var(--text-primary);
-            font-family: inherit;
-        }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5); }
-        .form-hint { font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.3rem; }
-        
-        /* Layout Demo */
-        .app-layout-demo {
-            height: 800px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border-primary);
-            background-color: var(--bg-primary);
-            display: grid;
-            grid-template-areas:
-                "header header"
-                "sidebar main"
-                "footer footer";
-            grid-template-rows: 60px 1fr 40px;
-            grid-template-columns: 240px 1fr;
-            color: var(--text-primary);
-        }
-        .app-layout-demo header, .app-layout-demo aside, .app-layout-demo main, .app-layout-demo footer {
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-        }
-        .app-layout-demo header { grid-area: header; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-primary); justify-content: space-between;}
-        .app-layout-demo aside { grid-area: sidebar; background-color: var(--bg-secondary); border-right: 1px solid var(--border-primary); flex-direction: column; align-items: flex-start; padding: 20px; }
-        .app-layout-demo main { grid-area: main; background-color: var(--bg-primary); flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 20px; }
-        .app-layout-demo footer { grid-area: footer; background-color: var(--bg-secondary); border-top: 1px solid var(--border-primary); justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);}
-        .logo-text { font-weight: bold; font-size: 1.2rem; margin-left: 8px;}
-        .logo-subtitle { color: var(--text-tertiary); font-size: 0.8rem; margin-left: 8px;}
-        .time-value { font-family: var(--font-mono); font-size: 1.1rem; }
-        .indicator { text-align: center; font-size: 0.8rem; }
-        .indicator-label { color: var(--text-tertiary); }
-        .indicator-value { font-weight: bold; font-size: 1rem; display: block;}
-        .indicator-value.critical { color: var(--status-critical); }
-        .indicator-value.warning { color: var(--status-high); }
-        .indicator-value.success { color: var(--status-success); }
-        .sidebar-nav { width: 100%;}
-        .nav-item { display: flex; align-items: center; padding: 10px; border-radius: 6px; margin-bottom: 5px; cursor: pointer;}
-        .nav-item:hover, .nav-item.active { background-color: var(--bg-tertiary); }
-        .nav-label { margin-left: 10px; flex-grow: 1;}
-        .nav-badge { background: var(--accent-primary); color: white; font-size: 0.7rem; border-radius: 5px; padding: 2px 6px; }
-        .content-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
-        .content-body { width: 100%; height: 100%; background-color: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-primary); padding: 20px; text-align: center;}
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            #toc-container {
-                display: none;
-            }
-            main {
-                max-width: 100%;
-                padding: 30px;
+    <!-- Configurazione di Tailwind CSS con i colori e i font del progetto -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        'bg-primary': '#0a0e14',
+                        'bg-secondary': '#13171d',
+                        'bg-tertiary': '#1a1f29',
+                        'bg-elevated': '#212730',
+                        'border-primary': '#2d3541',
+                        'border-secondary': '#3d4552',
+                        'text-primary': '#e6e8eb',
+                        'text-secondary': '#9ca3af',
+                        'text-tertiary': '#6b7280',
+                        'status-critical': '#dc2626',
+                        'status-high': '#f59e0b',
+                        'status-medium': '#3b82f6',
+                        'status-low': '#10b981',
+                        'accent-primary': '#2563eb',
+                        'accent-hover': '#3b82f6',
+                    }
+                }
             }
         }
+        dayjs.locale('it');
+    </script>
+    
+    <style type="text/tailwindcss">
+        /* Stili custom per l'applicazione */
+        body { @apply bg-bg-primary text-text-primary font-sans antialiased; }
+        .btn { @apply inline-block px-4 py-2 rounded-md font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary; }
+        .btn-primary { @apply bg-accent-primary text-white hover:bg-accent-hover focus:ring-accent-primary; }
+        .btn-secondary { @apply bg-bg-elevated text-text-primary border border-border-secondary hover:bg-bg-tertiary focus:ring-accent-hover; }
+        .btn-danger { @apply bg-status-critical text-white hover:bg-red-500 focus:ring-status-critical; }
+        .badge { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold leading-tight; }
+        .form-input { @apply w-full bg-bg-secondary border border-border-primary rounded-md px-3 py-2 text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent; }
+        .form-label { @apply block text-sm font-medium text-text-secondary mb-1; }
         
-        #mobile-toc-toggle {
-            display: none;
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1001;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-primary);
-            color: var(--text-primary);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        
-        @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            h2 { font-size: 1.5rem; }
-            main { padding: 20px; }
-            
-            #mobile-toc-toggle { display: flex; align-items: center; justify-content: center; }
-            #toc-container {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(10, 14, 20, 0.9);
-                backdrop-filter: blur(5px);
-                z-index: 1000;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease-in-out;
-                padding: 60px 20px 20px;
-            }
-            #toc-container.open {
-                transform: translateX(0);
-            }
-        }
+        /* Stili per le icone di Heroicons */
+        .icon { @apply w-5 h-5; }
+        .nav-icon { @apply w-6 h-6; }
     </style>
 </head>
-<body>
+<body class="overflow-hidden">
 
-    <div class="container">
-        <aside id="toc-container">
-            <h3>Sommario</h3>
-            <ul id="toc">
-                <!-- Generato dinamicamente -->
-            </ul>
-        </aside>
-
-        <main id="content">
-            <h1>PROGETTO THUNDER <small>Sistema di Gestione Sala Operativa Protezione Civile</small></h1>
-            <p><strong>DOCUMENTO DI PROGETTAZIONE SOFTWARE</strong></p>
-
-            <hr>
-
-            <section id="section-1">
-                <h2>1. EXECUTIVE SUMMARY</h2>
-                <p><strong>Nome Progetto</strong>: Thunder</p>
-                <p><strong>Tipologia</strong>: Sistema di Gestione Sala Operativa</p>
-                <p><strong>Settore</strong>: Protezione Civile</p>
-                <p><strong>Deployment</strong>: GitHub Pages (Static Web Application)</p>
-                <p><strong>Storage</strong>: Browser Local Storage / IndexedDB</p>
-            </section>
-            
-            <hr>
-
-            <section id="section-2">
-                <h2>2. ARCHITETTURA SISTEMA</h2>
-                <h3>2.1 Stack Tecnologico</h3>
-                <pre><code class="language-text">Frontend Framework: Vue.js 3 (Composition API) / React
-UI Framework: Tailwind CSS + Custom Components
-Mapping: Leaflet.js / MapLibre GL JS
-State Management: Pinia / Zustand
-Data Persistence: IndexedDB (Dexie.js)
-Charts/Analytics: Chart.js
-Date/Time: Day.js
-Notifications: Custom Toast System
-Export/Import: JSON + CSV capabilities
-Build Tool: Vite
-</code></pre>
-                <h3>2.2 Architettura Modulare</h3>
-                <pre><code class="language-text">thunder/
-├── src/
-│   ├── core/
-│   │   ├── database/
-│   │   │   ├── db.js (IndexedDB setup)
-│   │   │   ├── schema.js
-│   │   │   └── migrations.js
-│   │   ├── router/
-│   │   ├── store/
-│   │   └── utils/
-│   ├── modules/
-│   │   ├── dashboard/
-│   │   ├── segnalazioni/
-│   │   ├── interventi/
-│   │   ├── comunicazioni/
-│   │   ├── squadre/
-│   │   ├── mappa/
-│   │   ├── tasks/
-│   │   ├── rubrica/
-│   │   ├── diario-sala/
-│   │   └── analytics/
-│   ├── components/
-│   │   ├── common/
-│   │   ├── forms/
-│   │   ├── tables/
-│   │   └── modals/
-│   ├── assets/
-│   ├── styles/
-│   └── App.vue
-├── public/
-├── docs/
-└── tests/
-</code></pre>
-            </section>
-            
-            <hr>
-
-            <section id="section-3">
-                <h2>3. MODELLI DATI</h2>
-                <h3>3.1 Schema Database (IndexedDB)</h3>
-                <pre><code class="language-javascript">// database/schema.js
-
-export const DATABASE_SCHEMA = {
-  version: 1,
-  stores: {
+    <div id="app" class="h-screen w-screen">
+        <!-- L'applicazione Vue verrà montata qui -->
+        <div class="flex items-center justify-center h-full bg-bg-primary">
+            <div class="text-center">
+                <p class="text-2xl text-text-primary mb-2">⚡ Caricamento Thunder...</p>
+                <p class="text-text-secondary">Inizializzazione sala operativa in corso.</p>
+            </div>
+        </div>
+    </div>
     
-    // SEGNALAZIONI
-    segnalazioni: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'codice', keyPath: 'codice', unique: true },
-        { name: 'stato', keyPath: 'stato' },
-        { name: 'priorita', keyPath: 'priorita' },
-        { name: 'tipologia', keyPath: 'tipologia' },
-        { name: 'dataCreazione', keyPath: 'dataCreazione' },
-        { name: 'coordinate', keyPath: 'coordinate' }
-      ],
-      schema: {
-        id: 'number (auto)',
-        codice: 'string (SEG-YYYY-NNNN)',
-        tipologia: 'enum',
-        priorita: 'enum (CRITICA|ALTA|MEDIA|BASSA)',
-        stato: 'enum (APERTA|IN_CORSO|SOSPESA|CHIUSA|ARCHIVIATA)',
-        richiedente: {
-          nome: 'string',
-          telefono: 'string',
-          riferimento: 'string'
-        },
-        descrizione: 'string',
-        localita: {
-          indirizzo: 'string',
-          comune: 'string',
-          provincia: 'string',
-          coordinate: { lat: 'number', lng: 'number' }
-        },
-        dataCreazione: 'timestamp',
-        dataAggiornamento: 'timestamp',
-        dataChiusura: 'timestamp?',
-        interventoId: 'number?',
-        comunicazioniIds: 'array&lt;number&gt;',
-        allegati: 'array&lt;object&gt;',
-        note: 'string',
-        operatoreCreazione: 'string',
-        operatoreChiusura: 'string?',
-        tags: 'array&lt;string&gt;'
-      }
-    },
+    <!-- ====================================================================== -->
+    <!-- TEMPLATES DEI COMPONENTI VUE -->
+    <!-- ====================================================================== -->
 
-    // INTERVENTI
-    interventi: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'codice', keyPath: 'codice', unique: true },
-        { name: 'stato', keyPath: 'stato' },
-        { name: 'segnalazioneId', keyPath: 'segnalazioneId' },
-        { name: 'dataInizio', keyPath: 'dataInizio' }
-      ],
-      schema: {
-        id: 'number',
-        codice: 'string (INT-YYYY-NNNN)',
-        segnalazioneId: 'number',
-        tipologia: 'enum',
-        stato: 'enum (PIANIFICATO|IN_CORSO|SOSPESO|COMPLETATO|ANNULLATO)',
-        priorita: 'enum',
-        descrizione: 'string',
-        localita: 'object',
-        dataInizio: 'timestamp',
-        dataFine: 'timestamp?',
-        squadreAssegnate: 'array&lt;number&gt;',
-        risorseImpiegate: {
-          personale: 'number',
-          mezzi: 'array&lt;string&gt;',
-          attrezzature: 'array&lt;string&gt;'
-        },
-        comunicazioniIds: 'array&lt;number&gt;',
-        checkpoints: 'array&lt;{timestamp, descrizione, operatore}&gt;',
-        risultato: 'string?',
-        noteOperative: 'string',
-        coordinatoreId: 'number',
-        allegati: 'array&lt;object&gt;',
-        tags: 'array&lt;string&gt;'
-      }
-    },
-
-    // COMUNICAZIONI
-    comunicazioni: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'tipo', keyPath: 'tipo' },
-        { name: 'timestamp', keyPath: 'timestamp' },
-        { name: 'segnalazioneId', keyPath: 'segnalazioneId' },
-        { name: 'interventoId', keyPath: 'interventoId' }
-      ],
-      schema: {
-        id: 'number',
-        tipo: 'enum (ENTRATA|USCITA)',
-        canale: 'enum (TELEFONO|RADIO|EMAIL|FAX|PERSONA|APP|ALTRO)',
-        timestamp: 'timestamp',
-        mittente: 'string',
-        destinatario: 'string',
-        contenuto: 'string',
-        priorita: 'enum',
-        segnalazioneId: 'number?',
-        interventoId: 'number?',
-        squadraId: 'number?',
-        operatore: 'string',
-        protocollata: 'boolean',
-        numeroProtocollo: 'string?',
-        allegati: 'array&lt;object&gt;',
-        note: 'string'
-      }
-    },
-
-    // SQUADRE
-    squadre: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'codice', keyPath: 'codice', unique: true },
-        { name: 'stato', keyPath: 'stato' },
-        { name: 'specializzazione', keyPath: 'specializzazione' }
-      ],
-      schema: {
-        id: 'number',
-        codice: 'string',
-        nome: 'string',
-        specializzazione: 'enum',
-        stato: 'enum (DISPONIBILE|IMPEGNATA|FUORI_SERVIZIO|RIENTRO)',
-        componenti: 'array&lt;{ nome, ruolo, contatto, qualifiche }&gt;',
-        caposquadra: 'string',
-        mezzi: 'array&lt;string&gt;',
-        attrezzature: 'array&lt;string&gt;',
-        interventoCorrente: 'number?',
-        posizione: { lat: 'number', lng: 'number' },
-        contattoRadio: 'string',
-        contattoTelefonico: 'string',
-        noteOperative: 'string',
-        ultimoAggiornamento: 'timestamp'
-      }
-    },
-
-    // PUNTI MAPPA
-    puntiMappa: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'tipologia', keyPath: 'tipologia' },
-        { name: 'riferimentoTipo', keyPath: 'riferimentoTipo' },
-        { name: 'riferimentoId', keyPath: 'riferimentoId' }
-      ],
-      schema: {
-        id: 'number',
-        tipologia: 'enum (SEGNALAZIONE|INTERVENTO|SQUADRA|POI|AREA_CRITICA)',
-        coordinate: { lat: 'number', lng: 'number' },
-        indirizzo: 'string',
-        icona: 'string',
-        colore: 'string',
-        etichetta: 'string',
-        descrizione: 'string',
-        riferimentoTipo: 'string?',
-        riferimentoId: 'number?',
-        visibile: 'boolean',
-        geometria: 'object?', // Per aree/poligoni
-        dataCreazione: 'timestamp'
-      }
-    },
-
-    // TASK
-    tasks: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'stato', keyPath: 'stato' },
-        { name: 'priorita', keyPath: 'priorita' },
-        { name: 'scadenza', keyPath: 'scadenza' },
-        { name: 'assegnatoA', keyPath: 'assegnatoA' }
-      ],
-      schema: {
-        id: 'number',
-        titolo: 'string',
-        descrizione: 'string',
-        stato: 'enum (DA_FARE|IN_CORSO|COMPLETATA|ANNULLATA)',
-        priorita: 'enum',
-        assegnatoA: 'string',
-        segnalazioneId: 'number?',
-        interventoId: 'number?',
-        scadenza: 'timestamp?',
-        dataCreazione: 'timestamp',
-        dataCompletamento: 'timestamp?',
-        subtasks: 'array&lt;{ id, titolo, completato, timestamp }&gt;',
-        checklist: 'array&lt;{ item, checked }&gt;',
-        tags: 'array&lt;string&gt;',
-        note: 'string'
-      }
-    },
-
-    // RUBRICA
-    contatti: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'categoria', keyPath: 'categoria' },
-        { name: 'organizzazione', keyPath: 'organizzazione' },
-        { name: 'cognome', keyPath: 'cognome' }
-      ],
-      schema: {
-        id: 'number',
-        tipologia: 'enum (PERSONA|ENTE|UNITA)',
-        categoria: 'enum (VVF|FORZE_ORDINE|SANITARIO|TECNICO|VOLONTARIATO|ISTITUZIONALE|PRIVATO)',
-        nome: 'string',
-        cognome: 'string',
-        organizzazione: 'string',
-        ruolo: 'string',
-        telefono: 'string',
-        cellulare: 'string',
-        email: 'string',
-        radio: 'string',
-        fax: 'string',
-        indirizzo: 'object',
-        note: 'string',
-        reperibilita: 'array&lt;{ giorno, oraInizio, oraFine }&gt;',
-        tags: 'array&lt;string&gt;',
-        preferito: 'boolean'
-      }
-    },
-
-    // DIARIO DI SALA
-    diarioSala: {
-      keyPath: 'id',
-      autoIncrement: true,
-      indexes: [
-        { name: 'timestamp', keyPath: 'timestamp' },
-        { name: 'turno', keyPath: 'turno' },
-        { name: 'tipologia', keyPath: 'tipologia' }
-      ],
-      schema: {
-        id: 'number',
-        timestamp: 'timestamp',
-        operatore: 'string',
-        turno: 'string',
-        tipologia: 'enum (EVENTO|COMUNICAZIONE|DECISIONE|CAMBIO_STATO|NOTA|ALTRO)',
-        contenuto: 'string',
-        riferimenti: {
-          segnalazioneId: 'number?',
-          interventoId: 'number?',
-          squadraId: 'number?',
-          comunicazioneId: 'number?'
-        },
-        importanza: 'enum (NORMALE|RILEVANTE|CRITICA)',
-        allegati: 'array&lt;object&gt;'
-      }
-    },
-
-    // CONFIGURAZIONI
-    configurazioni: {
-      keyPath: 'chiave',
-      schema: {
-        chiave: 'string',
-        valore: 'any',
-        descrizione: 'string',
-        dataModifica: 'timestamp'
-      }
-    }
-  }
-};
-</code></pre>
-            </section>
+    <!-- Template Principale (App.vue) -->
+    <script type="text/x-template" id="app-template">
+        <div class="h-screen w-screen grid grid-rows-[60px_1fr_40px] grid-cols-[240px_1fr] bg-bg-primary text-text-primary text-sm">
             
-            <hr>
+            <!-- HEADER -->
+            <header class="col-span-2 bg-bg-secondary border-b border-border-primary flex items-center justify-between px-4">
+                <div class="flex items-center gap-4">
+                    <div class="text-xl font-bold flex items-center gap-2">
+                        <span class="text-2xl">⚡</span>
+                        <span>THUNDER</span>
+                    </div>
+                    <span class="text-xs text-text-tertiary mt-1">Sala Operativa</span>
+                </div>
+                <div class="font-mono text-center">
+                    <div class="text-lg">{{ currentTime }}</div>
+                    <div class="text-xs text-text-secondary">{{ currentDate }}</div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-4 text-xs">
+                        <div class="text-center">
+                            <span class="text-text-tertiary">Segnalazioni</span>
+                            <span class="block font-bold text-lg text-status-critical">{{ stats.aperte }}</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-text-tertiary">Interventi</span>
+                            <span class="block font-bold text-lg text-status-high">0</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-text-tertiary">Squadre</span>
+                            <span class="block font-bold text-lg text-status-low">0/0</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-right">M. Rossi<br><span class="text-xs text-text-tertiary">Operatore</span></span>
+                        <div class="w-10 h-10 bg-bg-tertiary rounded-full"></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SIDEBAR -->
+            <aside class="bg-bg-secondary border-r border-border-primary flex flex-col justify-between p-4">
+                <nav>
+                    <ul>
+                        <li v-for="item in navItems" :key="item.path">
+                            <a :href="item.path" @click.prevent="navigateTo(item.path)" class="flex items-center gap-3 px-3 py-2.5 my-1 rounded-md transition-colors" :class="{'bg-accent-primary/20 text-accent-hover': currentPath === item.path, 'hover:bg-bg-tertiary text-text-secondary hover:text-text-primary': currentPath !== item.path}">
+                                <component :is="item.icon" class="nav-icon"></component>
+                                <span class="font-semibold">{{ item.name }}</span>
+                                <span v-if="item.badge" class="ml-auto badge" :class="item.badge.class">{{ item.badge.value }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="space-y-2">
+                    <button @click="openNewSegnalazioneModal" class="btn btn-primary w-full">Nuova Segnalazione</button>
+                    <button class="btn btn-secondary w-full">Registra Comunicazione</button>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="overflow-y-auto p-6">
+                <component :is="currentView"></component>
+            </main>
+
+            <!-- FOOTER -->
+            <footer class="col-span-2 bg-bg-secondary border-t border-border-primary flex items-center justify-between px-4 text-xs text-text-tertiary">
+                <div>Thunder v1.0.0 (MVP)</div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-status-low animate-pulse"></span>
+                        <span>Sistema Operativo</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-status-low"></span>
+                        <span>Database Locale OK</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary !p-1.5 !text-xs">Export Dati</button>
+                    <button class="btn btn-secondary !p-1.5 !text-xs">Backup</button>
+                </div>
+            </footer>
+
+            <!-- MODAL NUOVA SEGNALAZIONE -->
+            <segnalazione-form-modal v-if="isNewSegnalazioneModalOpen" @close="closeNewSegnalazioneModal"></segnalazione-form-modal>
+        </div>
+    </script>
+    
+    <!-- Template Dashboard (DashboardView.vue) -->
+    <script type="text/x-template" id="dashboard-view-template">
+        <div>
+            <h1 class="text-2xl font-bold mb-6">Dashboard Sala Operativa</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Colonna Sinistra -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Pannello Situazione Generale -->
+                    <div class="bg-bg-secondary p-6 rounded-lg border border-border-primary">
+                        <h2 class="text-lg font-semibold mb-4">Pannello Situazione Generale</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <p class="text-text-tertiary text-sm">Segnalazioni Aperte</p>
+                                <p class="text-4xl font-bold text-status-critical">{{ stats.aperte }}</p>
+                            </div>
+                             <div>
+                                <p class="text-text-tertiary text-sm">Interventi Attivi</p>
+                                <p class="text-4xl font-bold text-status-high">0</p>
+                            </div>
+                             <div>
+                                <p class="text-text-tertiary text-sm">Squadre Impegnate</p>
+                                <p class="text-4xl font-bold text-status-medium">0</p>
+                            </div>
+                             <div>
+                                <p class="text-text-tertiary text-sm">Totale Segnalazioni</p>
+                                <p class="text-4xl font-bold text-text-secondary">{{ stats.totali }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Segnalazioni Critiche -->
+                    <div class="bg-bg-secondary p-6 rounded-lg border border-border-primary">
+                        <h2 class="text-lg font-semibold mb-4">Allerte e Priorità Critiche</h2>
+                        <div v-if="critiche.length > 0" class="space-y-3">
+                            <div v-for="s in critiche" :key="s.id" class="flex items-center justify-between bg-bg-tertiary p-3 rounded-md">
+                                <div class="flex items-center gap-3">
+                                    <span class="badge bg-status-critical text-white">CRITICA</span>
+                                    <div>
+                                        <p class="font-semibold">{{ s.descrizione }}</p>
+                                        <p class="text-xs text-text-secondary">{{ s.localita.indirizzo }}, {{ s.localita.comune }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-text-tertiary">{{ formatRelativeTime(s.dataCreazione) }}</span>
+                            </div>
+                        </div>
+                        <p v-else class="text-text-secondary text-center py-4">Nessuna segnalazione critica non gestita.</p>
+                    </div>
+                </div>
+
+                <!-- Colonna Destra -->
+                <div class="space-y-6">
+                    <!-- Timeline Tempo Reale -->
+                    <div class="bg-bg-secondary p-6 rounded-lg border border-border-primary">
+                        <h2 class="text-lg font-semibold mb-4">Timeline Eventi Recenti</h2>
+                        <ul class="space-y-4">
+                           <li v-for="s in recenti" :key="s.id" class="flex gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" :class="priorityColor(s.priorita).bg">
+                                    <hero-icon name="ExclamationTriangleIcon" class="w-5 h-5 text-white"></hero-icon>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-text-primary">{{ s.codice }} - {{ s.descrizione }}</p>
+                                    <p class="text-xs text-text-tertiary">{{ formatRelativeTime(s.dataCreazione) }}</p>
+                                </div>
+                           </li>
+                           <li v-if="recenti.length === 0">
+                                <p class="text-text-secondary text-center py-4">Nessun evento recente.</p>
+                           </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+    
+    <!-- Template Segnalazioni (SegnalazioniView.vue) -->
+    <script type="text/x-template" id="segnalazioni-view-template">
+        <div>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Gestione Segnalazioni</h1>
+                <button @click="openNewSegnalazioneModal" class="btn btn-primary">
+                    <hero-icon name="PlusIcon" class="icon inline-block -ml-1 mr-1"></hero-icon>
+                    Aggiungi Segnalazione
+                </button>
+            </div>
             
-            <section id="section-4">
-                <h2>4. FUNZIONALITÀ DETTAGLIATE</h2>
-
-                <h3>4.1 DASHBOARD PRINCIPALE</h3>
-                <p><strong>Layout</strong>:</p>
-                <ul>
-                    <li>Header fisso con indicatori tempo reale</li>
-                    <li>Sidebar navigazione moduli</li>
-                    <li>Area principale multi-pannello configurabile</li>
-                    <li>Footer con stato sistema</li>
-                </ul>
-                <p><strong>Widgets Dashboard</strong>:</p>
-                <ol>
-                    <li>
-                        <strong>Pannello Situazione Generale</strong>
-                        <ul>
-                            <li>Segnalazioni aperte (con breakdown per priorità)</li>
-                            <li>Interventi attivi</li>
-                            <li>Squadre disponibili/impegnate</li>
-                            <li>Comunicazioni ultime 24h</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Timeline Tempo Reale</strong>
-                        <ul>
-                            <li>Ultimi eventi (scroll verticale)</li>
-                            <li>Codice colore per tipologia</li>
-                            <li>Click per dettaglio rapido</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Mappa Situazione</strong>
-                        <ul>
-                            <li>Vista compatta territorio</li>
-                            <li>Marker segnalazioni/interventi/squadre</li>
-                            <li>Cluster dinamico</li>
-                            <li>Click per zoom su modulo mappa</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Alert e Priorità</strong>
-                        <ul>
-                            <li>Task in scadenza</li>
-                            <li>Segnalazioni critiche non gestite</li>
-                            <li>Comunicazioni non protocollate</li>
-                            <li>Anomalie sistema</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Quick Actions</strong>
-                        <ul>
-                            <li>Nuova segnalazione</li>
-                            <li>Nuova comunicazione</li>
-                            <li>Registro diario</li>
-                            <li>Cerca globale</li>
-                        </ul>
-                    </li>
-                </ol>
-                <p><strong>Sistema Filtri Globali</strong>:</p>
-                <pre><code class="language-javascript">{
-  periodo: { da: Date, a: Date },
-  stato: ['APERTA', 'IN_CORSO', ...],
-  priorita: ['CRITICA', 'ALTA', ...],
-  squadra: [id1, id2, ...],
-  territorio: { comune: '', provincia: '' },
-  tipologia: [...],
-  testLibero: 'string'
-}</code></pre>
-
-                <h3>4.2 MODULO SEGNALAZIONI</h3>
-                <p><strong>Funzionalità</strong>:</p>
-                <ol>
-                    <li>
-                        <strong>Vista Tabellare</strong>
-                        <ul>
-                            <li>Ordinamento multi-colonna</li>
-                            <li>Filtri rapidi (stato, priorità, data)</li>
-                            <li>Codice colore per priorità</li>
-                            <li>Indicatori visivi stato</li>
-                            <li>Export CSV/PDF</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Vista Scheda</strong>
-                        <ul>
-                            <li>Form creazione/modifica strutturato</li>
-                            <li>Validazione campi obbligatori</li>
-                            <li>Autocomplete località</li>
-                            <li>Selezione punto mappa</li>
-                            <li>Upload allegati (Base64 storage)</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Vista Kanban</strong>
-                        <ul>
-                            <li>Colonne per stato</li>
-                            <li>Drag & drop cambio stato</li>
-                            <li>Contatori per colonna</li>
-                            <li>Filtri applicabili</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Dettaglio Segnalazione</strong>
-                        <p><strong>Header:</strong></p>
-                        <ul>
-                            <li>Codice + Badge stato/priorità</li>
-                            <li>Timestamp creazione/aggiornamento</li>
-                            <li>Quick actions (Modifica, Chiudi, Crea Intervento, Stampa)</li>
-                        </ul>
-                        <p><strong>Sezioni:</strong></p>
-                        <ul>
-                            <li>Informazioni principali</li>
-                            <li>Richiedente</li>
-                            <li>Localizzazione + mini-mappa</li>
-                            <li>Descrizione estesa</li>
-                            <li>Intervento collegato (se presente)</li>
-                            <li>Comunicazioni correlate (timeline)</li>
-                            <li>Task associate</li>
-                            <li>Cronologia modifiche</li>
-                            <li>Allegati</li>
-                            <li>Note operative</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Workflow Stati</strong>:
-                        <pre><code class="language-text">APERTA → IN_CORSO → SOSPESA → IN_CORSO
-                  ↓
-               CHIUSA → ARCHIVIATA</code></pre>
-                    </li>
-                </ol>
-
-                <h3>4.3 MODULO INTERVENTI</h3>
-                <p><strong>Funzionalità</strong>:</p>
-                <ol>
-                    <li><strong>Creazione Intervento</strong>: Wizard multi-step, Collegamento segnalazione, Assegnazione squadre, Pianificazione risorse, Briefing operativo.</li>
-                    <li><strong>Gestione Operativa</strong>: Checkpoint temporali (log attività), Aggiornamento stato real-time, Chat note tra operatori, Tracking risorse impiegate, Comunicazioni associate.</li>
-                    <li><strong>Vista Interventi Attivi</strong>: Timeline visuale, Durata intervento, Squadre assegnate con stato, Mappa posizione, Indicatore criticità.</li>
-                    <li><strong>Chiusura Intervento</strong>: Report finale, Valutazione risultato, Risorse consumate, Lesson learned, Archiviazione documentale.</li>
-                </ol>
-
-                <h3>4.4 MODULO COMUNICAZIONI</h3>
-                <p><strong>Funzionalità</strong>:</p>
-                <ol>
-                    <li><strong>Registro Comunicazioni</strong>: Entrate/Uscite separate, Timestamp preciso, Canale comunicazione, Mittente/Destinatario, Contenuto, Collegamenti (SEG/INT/SQD).</li>
-                    <li>
-                        <strong>Form Registrazione</strong>:
-                        <ul>
-                            <li>Campi: Tipo (IN/OUT), Canale (dropdown con icone), Da/A (autocomplete da rubrica), Oggetto, Contenuto, Priorità, Collegamento, Protocollazione, Allegati, Note.</li>
-                        </ul>
-                    </li>
-                    <li><strong>Vista Diario</strong>: Cronologica inversa, Filtro canale, Filtro tipo, Ricerca full-text, Export registro giornaliero.</li>
-                    <li><strong>Protocollo</strong>: Numerazione automatica (PROT-YYYY-NNNNN), Registro protocollo separato, Stampa modulo protocollazione.</li>
-                </ol>
-
-                <h3>4.5 MODULO SQUADRE</h3>
-                <p><strong>Funzionalità</strong>:</p>
-                <ol>
-                    <li><strong>Gestione Squadre</strong>: Anagrafica (Codice, Nome, Specializzazione, Composizione, Mezzi, Attrezzature, Contatti, Base) e Dati Operativi (Stato, Intervento, Posizione, Disponibilità).</li>
-                    <li><strong>Vista Quadro Squadre</strong>: Card per squadra, Indicatori stato visivi, Filtro per specializzazione, Filtro per stato, Assegnazione rapida a intervento.</li>
-                    <li><strong>Tracking Squadra</strong>: Storico interventi, Ore servizio, Statistiche impiego, Comunicazioni correlate.</li>
-                </ol>
-
-                <h3>4.6 MODULO MAPPA INTERATTIVA</h3>
-                <p><strong>Funzionalità</strong>:</p>
-                <ol>
-                    <li><strong>Mappa Base</strong>: Leaflet con tile OpenStreetMap, Controlli zoom/pan, Scala, Coordinate, Fullscreen.</li>
-                    <li><strong>Layers</strong>: Segnalazioni, Interventi, Squadre, POI Protezione Civile, Aree critiche, Risorse territorio.</li>
-                    <li><strong>Controlli Mappa</strong>: Toggle layers, Ricerca indirizzo, Geolocalizzazione, Misurazione, Disegno, Stampa/Export.</li>
-                    <li><strong>Interazioni</strong>: Click marker → Popup info, Click mappa → "Crea segnalazione qui", Drag marker, Cluster automatico.</li>
-                    <li><strong>Inserimento Punti</strong>: Modalità (click, coordinate, indirizzo, da entità) e Configurazione (tipo, etichetta, icona, colore, etc.).</li>
-                </ol>
-                
-                <h3>4.7 MODULO TASK E CHECKLIST</h3>
-                 <p><strong>Funzionalità</strong>:</p>
-                 <ol>
-                    <li><strong>Gestione Task</strong>: Viste Board (Kanban), Lista (tabella) e Calendario.</li>
-                    <li><strong>Creazione Task</strong>: Form con Titolo, Descrizione, Priorità, Assegnatario, Scadenza, Collegamenti, Tags, Subtasks e Checklist.</li>
-                    <li><strong>Notifiche Task</strong>: Scadenze imminenti, Task in ritardo, Task completate.</li>
-                </ol>
-
-                <h3>4.8 MODULO RUBRICA</h3>
-                 <p><strong>Funzionalità</strong>:</p>
-                 <ol>
-                    <li><strong>Gestione Contatti</strong>: Vista a lista con filtri e ricerca. Scheda contatto dettagliata (Anagrafica, Contatti, Indirizzo, Reperibilità).</li>
-                    <li><strong>Quick Access</strong>: Widget contatti emergenza, Ricerca rapida (Ctrl+K), Integrazione con modulo comunicazioni.</li>
-                    <li><strong>Export/Import</strong>: vCard, CSV.</li>
-                </ol>
-                
-                <h3>4.9 DIARIO DI SALA</h3>
-                 <p><strong>Funzionalità</strong>:</p>
-                 <ol>
-                    <li><strong>Registro Cronologico</strong>: Timeline verticale con voci strutturate (Timestamp, Turno, Operatore, Tipo, Contenuto, Riferimenti).</li>
-                    <li><strong>Inserimento Veloce</strong>: Form compatto sempre accessibile.</li>
-                    <li><strong>Gestione Turni</strong>: Definizione turni, operatori, passaggio consegne.</li>
-                    <li><strong>Report Giornaliero</strong>: Sintesi attività, export PDF.</li>
-                </ol>
-                
-                <h3>4.10 MODULO ANALYTICS E REPORT</h3>
-                 <p><strong>Funzionalità</strong> (per espansioni future):</p>
-                 <ol>
-                    <li><strong>Dashboard Statistiche</strong>: Grafici su segnalazioni, interventi, tempi di risposta, ecc.</li>
-                    <li><strong>Report Predefiniti</strong>: Giornaliero, settimanale, mensile, per evento.</li>
-                    <li><strong>Export Dati</strong>: Export completo database (JSON), selettivo (CSV), Backup.</li>
-                </ol>
-            </section>
-            
-            <hr>
-            
-            <section id="section-5">
-                <h2>5. INTERFACCIA UTENTE</h2>
-
-                <h3>5.1 Design System</h3>
-                <p><strong>Palette Colori</strong>:</p>
-                <pre><code class="language-css">:root {
-  /* Backgrounds */
-  --bg-primary: #0a0e14;
-  --bg-secondary: #13171d;
-  --bg-tertiary: #1a1f29;
-  --bg-elevated: #212730;
-  
-  /* Borders */
-  --border-primary: #2d3541;
-  --border-secondary: #3d4552;
-  
-  /* Text */
-  --text-primary: #e6e8eb;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-  
-  /* Status Colors */
-  --status-critical: #dc2626;
-  --status-high: #f59e0b;
-  --status-medium: #3b82f6;
-  --status-low: #10b981;
-  
-  /* Functional */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #dc2626;
-  --color-info: #3b82f6;
-  
-  /* Accents */
-  --accent-primary: #2563eb;
-  --accent-secondary: #7c3aed;
-  --accent-hover: #3b82f6;
-  
-  /* Squadre Stati */
-  --squad-available: #10b981;
-  --squad-busy: #f59e0b;
-  --squad-offline: #6b7280;
-  --squad-returning: #3b82f6;
-}
-</code></pre>
-                <p><strong>Tipografia</strong>:</p>
-                <pre><code class="language-css">Font Family: 'Inter', 'system-ui', sans-serif
-Font Monospace: 'JetBrains Mono', 'Consolas', monospace
-
-Heading 1: 32px / Bold / Letter-spacing: -0.5px
-Heading 2: 24px / SemiBold
-Heading 3: 20px / SemiBold
-Heading 4: 16px / Medium
-Body: 14px / Regular
-Small: 12px / Regular
-Code: 13px / Monospace
-</code></pre>
-
-                <h4>Componenti Base (Anteprima)</h4>
-
-                <p><strong>Buttons</strong></p>
-                <div class="ui-preview">
-                    <button class="btn btn-primary">Conferma</button>
-                    <button class="btn btn-secondary">Annulla</button>
-                    <button class="btn btn-danger">Elimina</button>
-                    <button class="btn btn-secondary btn-icon" title="Icon Button">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            <div class="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
+                <div class="p-4 border-b border-border-primary">
+                    <input type="text" v-model="search" class="form-input" placeholder="Cerca per codice, descrizione, indirizzo...">
+                </div>
+                <table class="w-full text-left">
+                    <thead class="bg-bg-tertiary text-xs text-text-secondary uppercase">
+                        <tr>
+                            <th class="p-4">Codice</th>
+                            <th class="p-4">Priorità</th>
+                            <th class="p-4">Stato</th>
+                            <th class="p-4">Descrizione</th>
+                            <th class="p-4">Località</th>
+                            <th class="p-4">Data Creazione</th>
+                            <th class="p-4"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="s in filteredSegnalazioni" :key="s.id" class="border-b border-border-primary hover:bg-bg-tertiary">
+                            <td class="p-4 font-mono font-semibold">{{ s.codice }}</td>
+                            <td class="p-4">
+                                <span class="badge" :class="priorityColor(s.priorita).bg + ' ' + priorityColor(s.priorita).text">{{ s.priorita }}</span>
+                            </td>
+                            <td class="p-4">
+                                <span class="badge" :class="statusColor(s.stato).bg + ' ' + statusColor(s.stato).text">{{ s.stato }}</span>
+                            </td>
+                            <td class="p-4 max-w-xs truncate" :title="s.descrizione">{{ s.descrizione }}</td>
+                            <td class="p-4 max-w-xs truncate" :title="s.localita.indirizzo + ', ' + s.localita.comune">{{ s.localita.indirizzo }}</td>
+                            <td class="p-4">{{ formatDateTime(s.dataCreazione) }}</td>
+                            <td class="p-4 text-right">
+                                <button class="text-text-secondary hover:text-accent-hover">
+                                    <hero-icon name="EllipsisVerticalIcon" class="icon"></hero-icon>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr v-if="filteredSegnalazioni.length === 0">
+                            <td colspan="7" class="text-center py-8 text-text-secondary">Nessuna segnalazione trovata.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </script>
+    
+    <!-- Template Modal Nuova Segnalazione -->
+    <script type="text/x-template" id="segnalazione-form-modal-template">
+        <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="$emit('close')">
+            <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-2xl border border-border-primary">
+                <div class="p-6 border-b border-border-primary flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Nuova Segnalazione</h2>
+                    <button @click="$emit('close')" class="text-text-secondary hover:text-text-primary">
+                        <hero-icon name="XMarkIcon" class="w-6 h-6"></hero-icon>
                     </button>
                 </div>
-                <pre><code class="language-html">&lt;!-- Primary --&gt;
-&lt;button class="btn btn-primary"&gt;Conferma&lt;/button&gt;
-
-&lt;!-- Secondary --&gt;
-&lt;button class="btn btn-secondary"&gt;Annulla&lt;/button&gt;
-
-&lt;!-- Danger --&gt;
-&lt;button class="btn btn-danger"&gt;Elimina&lt;/button&gt;
-
-&lt;!-- Icon Button --&gt;
-&lt;button class="btn btn-icon"&gt;&lt;svg&gt;...&lt;/svg&gt;&lt;/button&gt;</code></pre>
-
-                <p><strong>Cards</strong></p>
-                <div class="ui-preview">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Titolo Card</h3>
-                            <div class="card-actions">...</div>
-                        </div>
-                        <div class="card-body">Contenuto della card.</div>
-                        <div class="card-footer">Footer della card</div>
-                    </div>
-                </div>
-
-                <p><strong>Badges</strong></p>
-                <div class="ui-preview">
-                    <span class="badge badge-critical">CRITICA</span>
-                    <span class="badge badge-high">ALTA</span>
-                    <span class="badge badge-medium">MEDIA</span>
-                    <span class="badge badge-low">BASSA</span>
-                    <br><br>
-                    <span class="badge badge-status-open">APERTA</span>
-                    <span class="badge badge-status-progress">IN CORSO</span>
-                    <span class="badge badge-status-closed">CHIUSA</span>
-                </div>
-                
-                <p><strong>Form Elements</strong></p>
-                <div class="ui-preview">
-                    <div class="form-group">
-                        <label class="form-label">Etichetta Input</label>
-                        <input type="text" class="form-input" placeholder="Scrivi qui..."/>
-                        <p class="form-hint">Questo è un suggerimento utile.</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Selezione</label>
-                        <select class="form-select"><option>Opzione 1</option><option>Opzione 2</option></select>
-                    </div>
-                </div>
-                
-                <h3>5.2 Layout Principale (Anteprima)</h3>
-                <div class="app-layout-demo">
-                    <header>
-                        <div class="logo">
-                            <span class="logo-icon" style="font-size: 1.5rem;">⚡</span>
-                            <span class="logo-text">THUNDER</span>
-                            <span class="logo-subtitle">Sala Operativa</span>
-                        </div>
-                        <div class="current-time">
-                           <span class="time-value">15:34:22</span>
-                        </div>
-                        <div style="display: flex; gap: 15px; align-items:center;">
-                            <div class="indicator">
-                                <span class="indicator-label">Segnalazioni</span>
-                                <span class="indicator-value critical">12</span>
+                <form @submit.prevent="handleSubmit">
+                    <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Priorità</label>
+                                <select v-model="form.priorita" class="form-input" required>
+                                    <option>BASSA</option>
+                                    <option>MEDIA</option>
+                                    <option>ALTA</option>
+                                    <option>CRITICA</option>
+                                </select>
                             </div>
-                            <div class="indicator">
-                                <span class="indicator-label">Interventi</span>
-                                <span class="indicator-value warning">7</span>
-                            </div>
-                            <div class="indicator">
-                                <span class="indicator-label">Squadre</span>
-                                <span class="indicator-value success">15/18</span>
+                            <div>
+                                <label class="form-label">Tipologia</label>
+                                <input type="text" v-model="form.tipologia" class="form-input" placeholder="Es. Allagamento" required>
                             </div>
                         </div>
-                    </header>
-                    <aside>
-                        <nav class="sidebar-nav">
-                            <a class="nav-item active">
-                                <span class="nav-label">Dashboard</span>
-                            </a>
-                            <a class="nav-item">
-                                <span class="nav-label">Segnalazioni</span>
-                                <span class="nav-badge">12</span>
-                            </a>
-                            <a class="nav-item">
-                                <span class="nav-label">Interventi</span>
-                                <span class="nav-badge">7</span>
-                            </a>
-                            <a class="nav-item"><span class="nav-label">Mappa</span></a>
-                            <a class="nav-item"><span class="nav-label">Diario Sala</span></a>
-                        </nav>
-                    </aside>
-                    <main>
-                         <div class="content-header">
-                            <span>Dashboard</span>
-                            <div>...</div>
-                         </div>
-                         <div class="content-body">
-                             Contenuto dinamico moduli...
-                         </div>
-                    </main>
-                    <footer>
-                       <span>Thunder v1.0.0</span>
-                       <span>Sistema Operativo</span>
-                    </footer>
-                </div>
-
-            </section>
-            
-            <hr>
-            
-            <section id="section-6">
-                <h2>6. IMPLEMENTAZIONE TECNICA</h2>
-                <h3>6.1 Setup Progetto</h3>
-                <pre><code class="language-bash"># Inizializzazione
-npm create vite@latest thunder -- --template vue
-cd thunder
-npm install
-
-# Dipendenze
-npm install vue-router@4 pinia
-npm install dexie
-npm install leaflet
-npm install chart.js vue-chartjs
-npm install dayjs
-npm install @headlessui/vue
-npm install @heroicons/vue
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-
-# Build per GitHub Pages
-npm install -D gh-pages
-</code></pre>
-                
-                <h3>6.2 Configurazione vite.config.js</h3>
-                <pre><code class="language-javascript">import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import path from 'path'
-
-export default defineConfig({
-  plugins: [vue()],
-  base: '/thunder/', // Nome repository GitHub
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': ['vue', 'vue-router', 'pinia'],
-          'database': ['dexie'],
-          'maps': ['leaflet'],
-          'charts': ['chart.js']
-        }
-      }
-    }
-  }
-})
-</code></pre>
-
-                <h3>6.3 Database Setup (Dexie.js)</h3>
-                <pre><code class="language-javascript">// src/core/database/db.js
-
-import Dexie from 'dexie';
-
-export class ThunderDatabase extends Dexie {
-  constructor() {
-    super('ThunderDB');
+                         <div>
+                            <label class="form-label">Descrizione Breve</label>
+                            <input type="text" v-model="form.descrizione" class="form-input" placeholder="Descrizione sintetica dell'evento" required>
+                        </div>
+                        <fieldset class="border border-border-primary p-4 rounded-md">
+                            <legend class="text-sm font-semibold px-2">Richiedente</legend>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="form-label">Nome e Cognome</label>
+                                    <input type="text" v-model="form.richiedente.nome" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Telefono</label>
+                                    <input type="tel" v-model="form.richiedente.telefono" class="form-input" required>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="border border-border-primary p-4 rounded-md">
+                            <legend class="text-sm font-semibold px-2">Località</legend>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="form-label">Indirizzo</label>
+                                    <input type="text" v-model="form.localita.indirizzo" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Comune</label>
+                                    <input type="text" v-model="form.localita.comune" class="form-input" required>
+                                </div>
+                            </div>
+                        </fieldset>
+                         <div>
+                            <label class="form-label">Note Aggiuntive</label>
+                            <textarea v-model="form.note" rows="3" class="form-input" placeholder="Dettagli aggiuntivi, persone coinvolte, ecc."></textarea>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-bg-tertiary rounded-b-lg flex justify-end gap-4">
+                        <button type="button" @click="$emit('close')" class="btn btn-secondary">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva Segnalazione</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </script>
     
-    this.version(1).stores({
-      segnalazioni: '++id, codice, stato, priorita, tipologia, dataCreazione, &coordinate',
-      interventi: '++id, codice, stato, segnalazioneId, dataInizio',
-      comunicazioni: '++id, tipo, timestamp, segnalazioneId, interventoId',
-      squadre: '++id, codice, stato, specializzazione',
-      puntiMappa: '++id, tipologia, riferimentoTipo, riferimentoId',
-      tasks: '++id, stato, priorita, scadenza, assegnatoA',
-      contatti: '++id, categoria, organizzazione, cognome',
-      diarioSala: '++id, timestamp, turno, tipologia',
-      configurazioni: 'chiave'
-    });
-  }
-}
+    <!-- Template Generico per pagine non implementate -->
+    <script type="text/x-template" id="placeholder-view-template">
+        <div class="flex flex-col items-center justify-center h-full text-center">
+            <component :is="icon" class="w-16 h-16 text-text-tertiary mb-4"></component>
+            <h1 class="text-2xl font-bold">Modulo: {{ title }}</h1>
+            <p class="text-text-secondary mt-2">Questa sezione è in fase di sviluppo.</p>
+        </div>
+    </script>
 
-export const db = new ThunderDatabase();
 
-// Inizializzazione dati esempio
-export async function initializeSampleData() {
-  const count = await db.segnalazioni.count();
-  if (count === 0) {
-    // Inserisci dati di esempio
-    await db.segnalazioni.bulkAdd([
-      {
-        codice: 'SEG-2024-0001',
-        tipologia: 'ALLAGAMENTO',
-        priorita: 'ALTA',
-        stato: 'APERTA',
-        // ... altri dati
-      }
-    ]);
-  }
-}
-</code></pre>
+    <!-- ====================================================================== -->
+    <!-- LOGICA DELL'APPLICAZIONE (JAVASCRIPT) -->
+    <!-- ====================================================================== -->
+    <script type="module">
+        const { createApp, ref, reactive, computed, onMounted, shallowRef } = Vue;
 
-                <h3>6.4 Store Pinia</h3>
-                <pre><code class="language-javascript">// src/stores/segnalazioniStore.js
-
-import { defineStore } from 'pinia';
-import { db } from '@/core/database/db';
-
-export const useSegnalazioniStore = defineStore('segnalazioni', {
-  state: () => ({
-    segnalazioni: [],
-    loading: false
-    // ...
-  }),
-  
-  getters: {
-    filteredSegnalazioni: (state) => { /* ... */ },
-    statistiche: (state) => { /* ... */ }
-  },
-  
-  actions: {
-    async fetchAll() { /* ... */ },
-    async create(segnalazione) { /* ... */ },
-    async update(id, updates) { /* ... */ },
-    async delete(id) { /* ... */ },
-  }
-});
-</code></pre>
-            </section>
-            
-            <hr>
-            
-            <section id="section-7">
-                <h2>7. DEPLOYMENT SU GITHUB PAGES</h2>
-                <h3>7.1 Configurazione package.json</h3>
-                <pre><code class="language-json">{
-  "name": "thunder",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
-  },
-  "dependencies": {
-    "vue": "^3.3.0",
-    "vue-router": "^4.2.0",
-    "pinia": "^2.1.0",
-    "dexie": "^3.2.0",
-    "leaflet": "^1.9.0",
-    "chart.js": "^4.4.0",
-    "dayjs": "^1.11.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^4.5.0",
-    "vite": "^5.0.0",
-    "tailwindcss": "^3.4.0",
-    "gh-pages": "^6.1.0"
-  }
-}
-</code></pre>
-
-                <h3>7.2 Workflow GitHub Actions</h3>
-                <pre><code class="language-yaml"># .github/workflows/deploy.yml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-</code></pre>
-            </section>
-
-            <hr>
-
-            <section id="section-8">
-                <h2>8. EXPORT/IMPORT DATI</h2>
-                <h3>8.1 Backup Sistema</h3>
-                <pre><code class="language-javascript">// src/core/utils/backup.js
-import { db } from '@/core/database/db';
-import dayjs from 'dayjs';
-
-export async function exportFullDatabase() {
-  const data = {
-    version: '1.0',
-    exportDate: new Date().toISOString(),
-    tables: {}
-  };
-  
-  const tables = [ /* ... */ ];
-  
-  for (const tableName of tables) {
-    data.tables[tableName] = await db[tableName].toArray();
-  }
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  // ... logica per il download
-}
-
-export async function importDatabase(file) {
-  return new Promise((resolve, reject) => {
-    // ... logica di lettura file, parsing, pulizia DB e import
-  });
-}
-
-export async function exportCSV(tableName, records) {
-  // ... logica per creare e scaricare un file CSV
-}
-</code></pre>
-            </section>
-
-            <hr>
-            
-            <section id="section-9">
-                <h2>9. FEATURES AVANZATE</h2>
-                <h3>9.1 Sistema Notifiche</h3>
-                <pre><code class="language-javascript">// src/core/utils/notifications.js
-import { ref } from 'vue';
-
-const notifications = ref([]);
-
-export function useNotifications() {
-  function notify(type, message, duration = 5000) {
-    // ... logica per aggiungere una notifica
-  }
-  
-  function removeNotification(id) {
-    // ... logica per rimuovere una notifica
-  }
-  
-  return {
-    notifications,
-    notify,
-    success: (msg) => notify('success', msg),
-    error: (msg) => notify('error', msg),
-  };
-}
-</code></pre>
-                <h3>9.2 Sistema Ricerca Globale</h3>
-                <pre><code class="language-javascript">// src/core/utils/search.js
-import { db } from '@/core/database/db';
-
-export async function globalSearch(query) {
-  const results = [];
-  const lowerQuery = query.toLowerCase();
-  
-  // Cerca in tutte le tabelle rilevanti (segnalazioni, interventi, etc.)
-  const segnalazioni = await db.segnalazioni.filter(/* ... */).toArray();
-  results.push(...segnalazioni.map(s => ({ type: 'segnalazione', /*...*/ })));
-  
-  // ... altre ricerche
-  
-  return results;
-}
-</code></pre>
-            </section>
-            
-            <hr>
-            
-            <section id="section-10">
-                <h2>10. ROADMAP SVILUPPO</h2>
-                <h3>Fase 1 - MVP (Settimane 1-3)</h3>
-                <ul>
-                    <li>Setup progetto e ambiente sviluppo</li>
-                    <li>Database schema e setup IndexedDB</li>
-                    <li>Layout base e navigazione</li>
-                    <li>Modulo Segnalazioni (CRUD base)</li>
-                    <li>Modulo Comunicazioni (lista e form)</li>
-                    <li>Dashboard base con widgets essenziali</li>
-                </ul>
-                <h3>Fase 2 - Core Features (Settimane 4-6)</h3>
-                <ul>
-                    <li>Modulo Interventi completo</li>
-                    <li>Modulo Squadre completo</li>
-                    <li>Sistema collegamenti tra entità</li>
-                    <li>Filtri avanzati</li>
-                    <li>Ricerca globale</li>
-                    <li>Diario di Sala</li>
-                </ul>
-                <h3>Fase 3 - Avanzate (Settimane 7-9)</h3>
-                <ul>
-                    <li>Mappa interattiva completa</li>
-                    <li>Sistema Task e subtask</li>
-                    <li>Rubrica contatti</li>
-                    <li>Analytics base</li>
-                    <li>Export/Import dati</li>
-                    <li>Sistema notifiche</li>
-                </ul>
-                <h3>Fase 4 - Polish (Settimane 10-12)</h3>
-                <ul>
-                    <li>Ottimizzazioni performance</li>
-                    <li>Testing completo</li>
-                    <li>Documentazione utente</li>
-                    <li>Themes e personalizzazione</li>
-                    <li>PWA capabilities</li>
-                    <li>Deploy e CI/CD</li>
-                </ul>
-                <h3>Fase 5 - Future Enhancements</h3>
-                <ul>
-                    <li>Backend integration ready</li>
-                    <li>API REST strutturata</li>
-                    <li>Autenticazione multi-utente</li>
-                    <li>Sincronizzazione cloud</li>
-                    <li>Mobile app (React Native)</li>
-                    <li>Reporting avanzato</li>
-                    <li>Machine learning per priorità automatica</li>
-                </ul>
-            </section>
-            
-            <hr>
-            
-            <section id="section-11">
-                <h2>11. CONSIDERAZIONI FINALI</h2>
-                <h3>Vantaggi Architettura Scelta:</h3>
-                <ul>
-                    <li><strong>Zero dipendenze backend</strong>: funziona completamente offline</li>
-                    <li><strong>Velocità</strong>: tutto in locale, nessuna latenza rete</li>
-                    <li><strong>Privacy</strong>: dati non escono dal browser</li>
-                    <li><strong>Scalabilità</strong>: pronto per integrazione backend futura</li>
-                    <li><strong>Portabilità</strong>: export/import semplice</li>
-                </ul>
-                <h3>Limitazioni da Considerare:</h3>
-                <ul>
-                    <li>Dati limitati a singolo browser (mitigabile con export/backup)</li>
-                    <li>Nessuna collaborazione multi-utente real-time (per ora)</li>
-                    <li>Storage limitato browser (quota IndexedDB ~50MB-100MB+)</li>
-                    <li>Necessità backup manuale periodico</li>
-                </ul>
-                <h3>Migrazione Futura a Backend:</h3>
-                <p>L'architettura modulare permette facilmente di:</p>
-                <ol>
-                    <li>Mantenere gli store Pinia</li>
-                    <li>Sostituire chiamate <code>db.*</code> con API calls</li>
-                    <li>Implementare sincronizzazione</li>
-                    <li>Aggiungere autenticazione</li>
-                    <li>Mantenere modalità offline-first con service worker</li>
-                </ol>
-            </section>
-
-        </main>
-    </div>
-
-    <button id="mobile-toc-toggle" aria-label="Toggle Table of Contents">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-    </button>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const content = document.getElementById('content');
-            const toc = document.getElementById('toc');
-            const sections = content.querySelectorAll('h2');
-            
-            // Genera sommario
-            sections.forEach((section, index) => {
-                const id = `section-${index + 1}`;
-                section.parentElement.id = id;
-                const title = section.textContent;
-                const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.href = `#${id}`;
-                a.textContent = title;
-                li.appendChild(a);
-                toc.appendChild(li);
-            });
-
-            // Evidenziazione sintassi
-            function highlightSyntax() {
-                const codeBlocks = document.querySelectorAll('pre code');
-                codeBlocks.forEach(block => {
-                    let html = block.innerHTML;
-                    
-                    // Semplice highlighting basato su regex
-                    // Commenti
-                    html = html.replace(/(\/\/.*)/g, '<span class="token comment">$1</span>');
-                    html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="token comment">$1</span>');
-                    // Stringhe
-                    html = html.replace(/(['"`])(.*?)\1/g, '<span class="token string">$1$2$1</span>');
-                    // Keywords comuni
-                    html = html.replace(/\b(const|let|var|export|import|from|class|extends|super|async|await|function|return|if|else|for|while|new|this|of|in|try|catch|finally|switch|case|default|break|continue|delete|typeof|instanceof)\b/g, '<span class="token keyword">$1</span>');
-                     // Boolean e null
-                    html = html.replace(/\b(true|false|null|undefined)\b/g, '<span class="token boolean">$1</span>');
-                    // Numeri
-                    html = html.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="token number">$1</span>');
-                    // Punteggiatura
-                    html = html.replace(/([\{\}\[\]\(\):;,\.=\+\-\*\/%&\|!<>])|(&lt;)|(&gt;)/g, '<span class="token punctuation">$1</span>');
-                     // Nomi di proprietà in JSON/JS Objects
-                    html = html.replace(/([{,]\s*)(\w+)(?=:)/g, '$1<span class="token property">$2</span>');
-
-                    block.innerHTML = html;
-                });
-            }
-            highlightSyntax();
-
-            // Sommario attivo allo scroll
-            const tocLinks = toc.querySelectorAll('a');
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    const id = entry.target.getAttribute('id');
-                    const link = toc.querySelector(`a[href="#${id}"]`);
-                    if (entry.isIntersecting) {
-                        tocLinks.forEach(l => l.classList.remove('active'));
-                        if(link) link.classList.add('active');
-                    }
-                });
-            }, { rootMargin: '-30% 0px -70% 0px' });
-
-            document.querySelectorAll('section[id]').forEach(section => {
-                observer.observe(section);
-            });
-
-            // Toggle sommario mobile
-            const mobileToggle = document.getElementById('mobile-toc-toggle');
-            const tocContainer = document.getElementById('toc-container');
-            
-            mobileToggle.addEventListener('click', () => {
-                tocContainer.classList.toggle('open');
-            });
-            
-            // Chiudi sommario mobile quando si clicca un link
-            toc.addEventListener('click', (e) => {
-                if(e.target.tagName === 'A') {
-                    tocContainer.classList.remove('open');
-                }
-            });
+        // --- 1. DATABASE SETUP (Dexie.js) ---
+        const db = new Dexie('ThunderDB');
+        db.version(1).stores({
+            segnalazioni: '++id, codice, stato, priorita, dataCreazione',
+            // ...altre tabelle come da specifica...
         });
+
+        async function initializeSampleData() {
+            const count = await db.segnalazioni.count();
+            if (count === 0) {
+                console.log("Database vuoto, inserimento dati di esempio.");
+                await db.segnalazioni.bulkAdd([
+                    {
+                        codice: 'SEG-2024-0001',
+                        tipologia: 'ALLAGAMENTO',
+                        priorita: 'CRITICA',
+                        stato: 'APERTA',
+                        richiedente: { nome: 'Mario Rossi', telefono: '3331234567' },
+                        descrizione: 'Cantina allagata in condominio',
+                        localita: { indirizzo: 'Via Garibaldi 10', comune: 'Roma', provincia: 'RM' },
+                        dataCreazione: Date.now() - 1000 * 60 * 5, // 5 min fa
+                        note: 'Acqua alta circa 50cm, possibile rischio elettrico.'
+                    },
+                    {
+                        codice: 'SEG-2024-0002',
+                        tipologia: 'FRANA',
+                        priorita: 'ALTA',
+                        stato: 'APERTA',
+                        richiedente: { nome: 'Luigi Verdi', telefono: '3477654321' },
+                        descrizione: 'Smottamento su strada provinciale 15',
+                        localita: { indirizzo: 'SP15, km 5', comune: 'Genova', provincia: 'GE' },
+                        dataCreazione: Date.now() - 1000 * 60 * 60 * 2, // 2 ore fa
+                        note: 'La strada è parzialmente bloccata.'
+                    },
+                     {
+                        codice: 'SEG-2024-0003',
+                        tipologia: 'INCENDIO BOSCHIVO',
+                        priorita: 'MEDIA',
+                        stato: 'IN_CORSO',
+                        richiedente: { nome: 'Centrale VVF', telefono: '115' },
+                        descrizione: 'Fumo visibile da collina Montepellegrino',
+                        localita: { indirizzo: 'Zona Belvedere', comune: 'Palermo', provincia: 'PA' },
+                        dataCreazione: Date.now() - 1000 * 60 * 60 * 8, // 8 ore fa
+                        note: 'Squadre VVF già sul posto, richiesto supporto logistico.'
+                    }
+                ]);
+            }
+        }
+
+
+        // --- 2. STATE MANAGEMENT (Simile a Pinia) ---
+        const store = reactive({
+            segnalazioni: [],
+            loading: false,
+
+            // Getters
+            stats: computed(() => ({
+                totali: store.segnalazioni.length,
+                aperte: store.segnalazioni.filter(s => s.stato === 'APERTA').length,
+                inCorso: store.segnalazioni.filter(s => s.stato === 'IN_CORSO').length,
+            })),
+            segnalazioniCritiche: computed(() => store.segnalazioni.filter(s => s.priorita === 'CRITICA' && s.stato !== 'CHIUSA')),
+            segnalazioniRecenti: computed(() => [...store.segnalazioni].sort((a,b) => b.dataCreazione - a.dataCreazione).slice(0, 5)),
+
+            // Actions
+            async fetchSegnalazioni() {
+                this.loading = true;
+                this.segnalazioni = await db.segnalazioni.toArray();
+                this.loading = false;
+            },
+            async generateCodice() {
+                const anno = new Date().getFullYear();
+                const count = await db.segnalazioni.where('codice').startsWith(`SEG-${anno}`).count();
+                return `SEG-${anno}-${String(count + 1).padStart(4, '0')}`;
+            },
+            async createSegnalazione(data) {
+                const codice = await this.generateCodice();
+                const nuova = {
+                    ...data,
+                    codice,
+                    dataCreazione: Date.now(),
+                    stato: 'APERTA'
+                };
+                await db.segnalazioni.add(nuova);
+                await this.fetchSegnalazioni();
+            }
+        });
+
+
+        // --- 3. ROUTER (Semplice, basato su hash) ---
+        const routes = {
+            '/': 'DashboardView',
+            '/segnalazioni': 'SegnalazioniView',
+            '/interventi': 'InterventiView',
+            '/mappa': 'MappaView',
+            '/squadre': 'SquadreView',
+            '/diario': 'DiarioView',
+        };
+
+        const currentPath = ref(window.location.hash.slice(1) || '/');
+        const currentView = computed(() => routes[currentPath.value] || 'DashboardView');
+
+        window.addEventListener('hashchange', () => {
+            currentPath.value = window.location.hash.slice(1) || '/';
+        });
+
+        function navigateTo(path) {
+            window.location.hash = path;
+        }
+
+
+        // --- 4. UTILITY FUNCTIONS ---
+        const priorityColor = (p) => {
+            switch(p) {
+                case 'CRITICA': return { bg: 'bg-status-critical', text: 'text-white' };
+                case 'ALTA': return { bg: 'bg-status-high', text: 'text-black' };
+                case 'MEDIA': return { bg: 'bg-status-medium', text: 'text-white' };
+                case 'BASSA': return { bg: 'bg-status-low', text: 'text-white' };
+                default: return { bg: 'bg-gray-500', text: 'text-white' };
+            }
+        };
+        const statusColor = (s) => {
+            switch(s) {
+                case 'APERTA': return { bg: 'bg-status-high', text: 'text-black' };
+                case 'IN_CORSO': return { bg: 'bg-status-medium', text: 'text-white' };
+                case 'CHIUSA': return { bg: 'bg-gray-500', text: 'text-white' };
+                default: return { bg: 'bg-gray-500', text: 'text-white' };
+            }
+        };
+        const formatDateTime = (ts) => dayjs(ts).format('DD/MM/YYYY HH:mm');
+        const formatRelativeTime = (ts) => {
+            const now = dayjs();
+            const then = dayjs(ts);
+            if (now.diff(then, 'minute') < 60) return `${now.diff(then, 'minute')} min fa`;
+            if (now.diff(then, 'hour') < 24) return `${now.diff(then, 'hour')} ore fa`;
+            return then.format('DD/MM/YYYY');
+        };
+
+        // --- 5. COMPONENTI VUE ---
+
+        // Icona Wrapper
+        const HeroIcon = {
+            props: ['name'],
+            template: `<i :data-heroicons-name="name" class="inline-block"></i>`
+        };
+
+        const PlaceholderView = {
+            template: '#placeholder-view-template',
+            components: { HeroIcon },
+            props: { title: String, icon: String }
+        };
+
+        const SegnalazioneFormModal = {
+            template: '#segnalazione-form-modal-template',
+            components: { HeroIcon },
+            emits: ['close'],
+            setup(props, { emit }) {
+                const form = ref({
+                    priorita: 'MEDIA',
+                    tipologia: '',
+                    descrizione: '',
+                    richiedente: { nome: '', telefono: '' },
+                    localita: { indirizzo: '', comune: '' },
+                    note: ''
+                });
+
+                async function handleSubmit() {
+                    await store.createSegnalazione(form.value);
+                    emit('close');
+                }
+
+                return { form, handleSubmit };
+            }
+        };
+
+        const DashboardView = {
+            template: '#dashboard-view-template',
+            components: { HeroIcon },
+            setup() {
+                return {
+                    stats: store.stats,
+                    critiche: store.segnalazioniCritiche,
+                    recenti: store.segnalazioniRecenti,
+                    formatRelativeTime,
+                    priorityColor
+                }
+            }
+        };
+
+        const SegnalazioniView = {
+            template: '#segnalazioni-view-template',
+            components: { HeroIcon },
+            setup() {
+                const search = ref('');
+                const filteredSegnalazioni = computed(() => {
+                    const term = search.value.toLowerCase();
+                    if (!term) return store.segnalazioni;
+                    return store.segnalazioni.filter(s =>
+                        s.codice.toLowerCase().includes(term) ||
+                        s.descrizione.toLowerCase().includes(term) ||
+                        s.localita.indirizzo.toLowerCase().includes(term)
+                    );
+                });
+
+                return { 
+                    search, 
+                    filteredSegnalazioni, 
+                    priorityColor,
+                    statusColor,
+                    formatDateTime,
+                    openNewSegnalazioneModal: () => app.isNewSegnalazioneModalOpen = true
+                }
+            }
+        };
+
+        // --- 6. APPLICAZIONE PRINCIPALE ---
+        const app = createApp({
+            template: '#app-template',
+            components: {
+                DashboardView,
+                SegnalazioniView,
+                SegnalazioneFormModal,
+                InterventiView: { extends: PlaceholderView, props: { title: { default: 'Interventi'}, icon: { default: 'WrenchScrewdriverIcon' } } },
+                MappaView: { extends: PlaceholderView, props: { title: { default: 'Mappa'}, icon: { default: 'MapIcon' } } },
+                SquadreView: { extends: PlaceholderView, props: { title: { default: 'Squadre'}, icon: { default: 'UserGroupIcon' } } },
+                DiarioView: { extends: PlaceholderView, props: { title: { default: 'Diario Sala'}, icon: { default: 'BookOpenIcon' } } },
+                HeroIcon
+            },
+            setup() {
+                const currentTime = ref(dayjs().format('HH:mm:ss'));
+                const currentDate = ref(dayjs().format('dddd D MMMM YYYY'));
+                const isNewSegnalazioneModalOpen = ref(false);
+
+                onMounted(async () => {
+                    // Carica dati iniziali
+                    await initializeSampleData();
+                    await store.fetchSegnalazioni();
+
+                    // Aggiorna orologio
+                    setInterval(() => {
+                        currentTime.value = dayjs().format('HH:mm:ss');
+                        if (dayjs().second() === 0) {
+                           currentDate.value = dayjs().format('dddd D MMMM YYYY');
+                        }
+                    }, 1000);
+                    
+                    // Rende le icone
+                    heroicons.render();
+                });
+
+                const navItems = computed(() => [
+                    { name: 'Dashboard', path: '/', icon: 'HomeIcon' },
+                    { name: 'Segnalazioni', path: '/segnalazioni', icon: 'MegaphoneIcon', badge: { value: store.stats.aperte, class: 'bg-status-critical text-white' } },
+                    { name: 'Interventi', path: '/interventi', icon: 'WrenchScrewdriverIcon' },
+                    { name: 'Squadre', path: '/squadre', icon: 'UserGroupIcon' },
+                    { name: 'Mappa', path: '/mappa', icon: 'MapIcon' },
+                    { name: 'Diario Sala', path: '/diario', icon: 'BookOpenIcon' },
+                ]);
+
+                return {
+                    currentTime,
+                    currentDate,
+                    currentPath,
+                    currentView,
+                    navigateTo,
+                    stats: store.stats,
+                    navItems,
+                    isNewSegnalazioneModalOpen,
+                    openNewSegnalazioneModal: () => isNewSegnalazioneModalOpen.value = true,
+                    closeNewSegnalazioneModal: () => isNewSegnalazioneModalOpen.value = false,
+                };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>

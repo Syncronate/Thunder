@@ -1,1786 +1,1523 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THUNDER - Sala Operativa Protezione Civile</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #13171d;
-            --bg-tertiary: #1a1f29;
-            --bg-elevated: #212730;
-            --border-primary: #2d3541;
-            --border-secondary: #3d4552;
-            --text-primary: #e6e8eb;
-            --text-secondary: #9ca3af;
-            --text-tertiary: #6b7280;
-            --status-critical: #dc2626;
-            --status-high: #f59e0b;
-            --status-medium: #3b82f6;
-            --status-low: #10b981;
-            --color-success: #10b981;
-            --color-warning: #f59e0b;
-            --color-error: #dc2626;
-            --color-info: #3b82f6;
-            --accent-primary: #2563eb;
-            --accent-hover: #3b82f6;
-            --squad-available: #10b981;
-            --squad-busy: #f59e0b;
-            --squad-offline: #6b7280;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow: hidden;
-        }
-
-        #app {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* HEADER */
-        .app-header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-primary);
-            padding: 0 20px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-icon {
-            font-size: 28px;
-        }
-
-        .logo-text {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 2px;
-        }
-
-        .logo-subtitle {
-            font-size: 12px;
-            color: var(--text-secondary);
-            padding-left: 10px;
-            border-left: 1px solid var(--border-primary);
-        }
-
-        .header-center {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-        }
-
-        .current-time {
-            text-align: center;
-        }
-
-        .time-label {
-            font-size: 10px;
-            color: var(--text-tertiary);
-            display: block;
-        }
-
-        .time-value {
-            font-size: 20px;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .date-value {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .header-indicators {
-            display: flex;
-            gap: 15px;
-        }
-
-        .indicator {
-            text-align: center;
-        }
-
-        .indicator-label {
-            font-size: 10px;
-            color: var(--text-tertiary);
-            display: block;
-        }
-
-        .indicator-value {
-            font-size: 18px;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .indicator-value.critical { color: var(--status-critical); }
-        .indicator-value.warning { color: var(--status-high); }
-        .indicator-value.success { color: var(--status-low); }
-
-        /* MAIN LAYOUT */
-        .app-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* SIDEBAR */
-        .app-sidebar {
-            width: 260px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border-primary);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-
-        .sidebar-nav {
-            padding: 20px 10px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 15px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-radius: 6px;
-            margin-bottom: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .nav-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .nav-item.active {
-            background: var(--accent-primary);
-            color: white;
-        }
-
-        .nav-icon {
-            font-size: 18px;
-            width: 20px;
-        }
-
-        .nav-label {
-            flex: 1;
-            font-size: 14px;
-        }
-
-        .nav-badge {
-            background: var(--status-critical);
-            color: white;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-
-        .nav-divider {
-            height: 1px;
-            background: var(--border-primary);
-            margin: 10px 0;
-        }
-
-        .sidebar-quick-actions {
-            padding: 10px;
-            border-top: 1px solid var(--border-primary);
-        }
-
-        /* MAIN CONTENT */
-        .app-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .content-header {
-            padding: 20px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .breadcrumb {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .content-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-bar input {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            color: var(--text-primary);
-            padding: 8px 15px;
-            border-radius: 6px;
-            width: 300px;
-            font-size: 14px;
-        }
-
-        .search-bar input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-        }
-
-        .content-body {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* BUTTONS */
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--accent-primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-secondary {
-            background: var(--bg-elevated);
-            color: var(--text-primary);
-            border: 1px solid var(--border-primary);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .btn-success {
-            background: var(--color-success);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--color-error);
-            color: white;
-        }
-
-        .btn-block {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        /* CARDS */
-        .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .card-footer {
-            padding: 15px 20px;
-            border-top: 1px solid var(--border-primary);
-            background: var(--bg-tertiary);
-        }
-
-        /* BADGES */
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-critical {
-            background: rgba(220, 38, 38, 0.2);
-            color: var(--status-critical);
-            border: 1px solid var(--status-critical);
-        }
-
-        .badge-high {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--status-high);
-            border: 1px solid var(--status-high);
-        }
-
-        .badge-medium {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--status-medium);
-            border: 1px solid var(--status-medium);
-        }
-
-        .badge-low {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--status-low);
-            border: 1px solid var(--status-low);
-        }
-
-        .badge-aperta { background: rgba(59, 130, 246, 0.2); color: var(--status-medium); border: 1px solid var(--status-medium); }
-        .badge-in_corso { background: rgba(245, 158, 11, 0.2); color: var(--status-high); border: 1px solid var(--status-high); }
-        .badge-chiusa { background: rgba(107, 114, 128, 0.2); color: var(--text-tertiary); border: 1px solid var(--text-tertiary); }
-
-        /* DASHBOARD GRID */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .stat-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .stat-card-title {
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-card-icon {
-            font-size: 24px;
-            opacity: 0.5;
-        }
-
-        .stat-card-value {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .stat-card-label {
-            font-size: 12px;
-            color: var(--text-tertiary);
-        }
-
-        /* TABLE */
-        .table-container {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead {
-            background: var(--bg-tertiary);
-        }
-
-        th {
-            padding: 12px 15px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-primary);
-            font-size: 14px;
-        }
-
-        tbody tr {
-            transition: background 0.2s;
-            cursor: pointer;
-        }
-
-        tbody tr:hover {
-            background: var(--bg-tertiary);
-        }
-
-        /* FORM */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            color: var(--text-primary);
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: inherit;
-        }
-
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-        }
-
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        /* MODAL */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .modal-container {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-        }
-
-        .modal-close:hover {
-            color: var(--text-primary);
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .modal-footer {
-            padding: 20px;
-            border-top: 1px solid var(--border-primary);
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        /* MAP */
-        .map-container {
-            height: 500px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border-primary);
-        }
-
-        /* TIMELINE */
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--border-primary);
-        }
-
-        .timeline-item {
-            position: relative;
-            padding-bottom: 20px;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -26px;
-            top: 5px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--accent-primary);
-            border: 2px solid var(--bg-primary);
-        }
-
-        .timeline-time {
-            font-size: 12px;
-            color: var(--text-tertiary);
-            margin-bottom: 5px;
-        }
-
-        .timeline-content {
-            background: var(--bg-tertiary);
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid var(--border-primary);
-        }
-
-        /* TOAST */
-        .toast-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-primary);
-            border-radius: 6px;
-            padding: 15px 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            min-width: 300px;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .toast-success { border-left: 4px solid var(--color-success); }
-        .toast-error { border-left: 4px solid var(--color-error); }
-        .toast-warning { border-left: 4px solid var(--color-warning); }
-        .toast-info { border-left: 4px solid var(--color-info); }
-
-        /* UTILITIES */
-        .text-critical { color: var(--status-critical); }
-        .text-high { color: var(--status-high); }
-        .text-medium { color: var(--status-medium); }
-        .text-low { color: var(--status-low); }
-        .text-muted { color: var(--text-tertiary); }
-        .mb-20 { margin-bottom: 20px; }
-        .mt-20 { margin-top: 20px; }
-        
-        .actions-cell {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-secondary);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-tertiary);
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>THUNDER - Sala Operativa Protezione Civile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="THUNDER - Sistema di Gestione Sala Operativa Protezione Civile (Static Web App)" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    :root{
+      /* Backgrounds */
+      --bg-primary:#0a0e14; --bg-secondary:#13171d; --bg-tertiary:#1a1f29; --bg-elevated:#212730;
+      /* Borders */
+      --border-primary:#2d3541; --border-secondary:#3d4552;
+      /* Text */
+      --text-primary:#e6e8eb; --text-secondary:#9ca3af; --text-tertiary:#6b7280;
+      /* Status Colors */
+      --status-critical:#dc2626; --status-high:#f59e0b; --status-medium:#3b82f6; --status-low:#10b981;
+      /* Functional */
+      --color-success:#10b981; --color-warning:#f59e0b; --color-error:#dc2626; --color-info:#3b82f6;
+      /* Accents */
+      --accent-primary:#2563eb; --accent-secondary:#7c3aed; --accent-hover:#3b82f6;
+      /* Squadre Stati */
+      --squad-available:#10b981; --squad-busy:#f59e0b; --squad-offline:#6b7280; --squad-returning:#3b82f6;
+      /* Misc */
+      --radius:10px; --radius-sm:8px; --radius-xs:6px;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg-primary); color:var(--text-primary);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    code,pre,.mono{font-family:"JetBrains Mono","Consolas",monospace}
+
+    /* Layout */
+    .app-container{
+      min-height:100vh; display:grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: 64px 1fr 44px;
+      grid-template-areas:
+        "header header"
+        "sidebar main"
+        "footer footer";
+      gap:0;
+    }
+    .app-header{grid-area:header; display:flex; align-items:center; justify-content:space-between;
+      gap:16px; padding:10px 16px; background:var(--bg-secondary); border-bottom:1px solid var(--border-primary); position:sticky; top:0; z-index:50;}
+    .app-sidebar{grid-area:sidebar; background:var(--bg-secondary); border-right:1px solid var(--border-primary); padding:14px; overflow:auto;}
+    .app-main{grid-area:main; padding:18px; overflow:auto;}
+    .app-footer{grid-area:footer; display:flex; align-items:center; justify-content:space-between;
+      padding:8px 14px; background:var(--bg-secondary); border-top:1px solid var(--border-primary); color:var(--text-secondary); font-size:12px}
+
+    /* Header */
+    .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.5px}
+    .logo-icon{font-size:20px}
+    .logo-text{font-size:18px}
+    .logo-subtitle{font-size:12px; color:var(--text-secondary); margin-left:4px}
+    .current-time{display:flex; flex-direction:column; align-items:center; gap:2px}
+    .time-label{font-size:10px; color:var(--text-tertiary); letter-spacing:.6px}
+    .time-value{font-size:18px; font-weight:700}
+    .date-value{font-size:12px; color:var(--text-secondary)}
+    .header-right{display:flex; align-items:center; gap:12px}
+    .header-indicators{display:flex; gap:12px}
+    .indicator{background:var(--bg-tertiary); border:1px solid var(--border-primary); border-radius:var(--radius-sm); padding:8px 10px; min-width:90px}
+    .indicator-label{display:block; font-size:10px; color:var(--text-tertiary)}
+    .indicator-value{font-size:16px; font-weight:700}
+    .indicator-value.critical{color:var(--status-critical)}
+    .indicator-value.warning{color:var(--status-high)}
+    .indicator-value.success{color:var(--color-success)}
+    .user-menu{display:flex; flex-direction:column; gap:2px; text-align:right}
+    .user-name{font-size:12px}
+    .user-role{font-size:10px; color:var(--text-tertiary)}
+
+    /* Sidebar */
+    .sidebar-nav{display:flex; flex-direction:column; gap:6px}
+    .nav-item, .router-link{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text-secondary);
+      padding:10px 12px; border-radius:var(--radius-sm); border:1px solid transparent}
+    .nav-item:hover, .router-link:hover{background:var(--bg-tertiary); color:var(--text-primary)}
+    .router-link-active{background:var(--bg-tertiary); color:var(--text-primary); border-color:var(--border-primary)}
+    .nav-badge{margin-left:auto; background:var(--bg-tertiary); color:var(--text-secondary);
+      border:1px solid var(--border-secondary); border-radius:999px; padding:2px 8px; font-size:11px}
+    .nav-divider{height:1px; background:var(--border-primary); margin:12px 0}
+    .sidebar-quick-actions{margin-top:14px; display:flex; flex-direction:column; gap:8px}
+    .sidebar-widget{margin-top:16px; background:var(--bg-tertiary); border:1px solid var(--border-primary); border-radius:var(--radius); padding:12px}
+    .widget-title{font-size:13px; margin:0 0 8px 0; color:var(--text-secondary)}
+    .contact-list{display:flex; flex-direction:column; gap:8px}
+    .contact-item{display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--text-secondary)}
+
+    /* Main */
+    .content-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+    .breadcrumb{color:var(--text-secondary); font-size:12px}
+    .content-actions{display:flex; align-items:center; gap:8px}
+    .search-bar input[type=search]{width:260px; background:var(--bg-tertiary); border:1px solid var(--border-primary);
+      color:var(--text-primary); padding:8px 10px; border-radius:var(--radius-sm); outline:none}
+    .content-body{display:block}
+
+    /* Buttons */
+    .btn{appearance:none; border:1px solid var(--border-primary); background:var(--bg-tertiary); color:var(--text-primary);
+      border-radius:var(--radius-sm); padding:8px 12px; cursor:pointer; font-size:13px}
+    .btn:hover{background:var(--bg-elevated)}
+    .btn-primary{background:var(--accent-primary); border-color:#1f49b6}
+    .btn-primary:hover{background:var(--accent-hover)}
+    .btn-secondary{background:var(--bg-tertiary)}
+    .btn-danger{background:#b02020; border-color:#9a1a1a}
+    .btn-danger:hover{background:#c42525}
+    .btn-ghost{background:transparent}
+    .btn-icon{display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px}
+    .btn-sm{padding:6px 10px; font-size:12px}
+    .btn-block{display:block; width:100%}
+
+    /* Cards */
+    .grid{display:grid; gap:12px}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:1fr 1fr 1fr}
+    .grid-auto{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+    .card{background:var(--bg-tertiary); border:1px solid var(--border-primary); border-radius:var(--radius); overflow:hidden}
+    .card-header{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border-primary)}
+    .card-title{font-size:14px; margin:0}
+    .card-actions{display:flex; gap:8px}
+    .card-body{padding:12px}
+    .card-footer{padding:10px 12px; border-top:1px solid var(--border-primary); color:var(--text-secondary); font-size:12px}
+
+    /* Badges */
+    .badge{display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid transparent}
+    .badge-critical{background:rgba(220,38,38,.15); color:#f87171; border-color:#7f1d1d}
+    .badge-high{background:rgba(245,158,11,.15); color:#fbbf24; border-color:#78350f}
+    .badge-medium{background:rgba(59,130,246,.15); color:#93c5fd; border-color:#1e3a8a}
+    .badge-low{background:rgba(16,185,129,.15); color:#6ee7b7; border-color:#064e3b}
+    .badge-status-open{background:rgba(59,130,246,.15); color:#93c5fd}
+    .badge-status-progress{background:rgba(245,158,11,.15); color:#fbbf24}
+    .badge-status-closed{background:rgba(16,185,129,.15); color:#6ee7b7}
+
+    /* Tables */
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:8px 10px; border-bottom:1px solid var(--border-primary); text-align:left; font-size:13px}
+    thead th{position:sticky; top:0; background:var(--bg-elevated); z-index:1}
+    tr:hover td{background:rgba(255,255,255,.03)}
+
+    /* Forms */
+    .form{display:grid; gap:10px}
+    .form-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .form-group{display:flex; flex-direction:column; gap:6px}
+    .form-label{font-size:12px; color:var(--text-secondary)}
+    .form-input, .form-select, .form-textarea{
+      background:var(--bg-tertiary); border:1px solid var(--border-primary); border-radius:var(--radius-sm);
+      color:var(--text-primary); padding:8px 10px; outline:none
+    }
+    .form-textarea{min-height:90px; resize:vertical}
+    .form-hint{font-size:11px; color:var(--text-tertiary)}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:200}
+    .modal-overlay{position:absolute; inset:0; background:rgba(0,0,0,.6)}
+    .modal-container{position:relative; width:min(720px,92vw); background:var(--bg-secondary); border:1px solid var(--border-primary);
+      border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+    .modal-header,.modal-footer{padding:12px; border-bottom:1px solid var(--border-primary)}
+    .modal-header{display:flex; align-items:center; justify-content:space-between}
+    .modal-body{padding:12px}
+    .modal-close{appearance:none; background:transparent; border:0; color:var(--text-secondary); font-size:20px; cursor:pointer}
+    .hidden{display:none !important}
+
+    /* Toasts */
+    .toast-container{position:fixed; bottom:16px; right:16px; display:flex; flex-direction:column; gap:8px; z-index:300}
+    .toast{min-width:260px; background:var(--bg-elevated); border:1px solid var(--border-primary); padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); font-size:13px}
+    .toast.success{border-color:#0b6f5c}
+    .toast.error{border-color:#6f0b0b}
+    .toast.warning{border-color:#7a550b}
+    .toast.info{border-color:#0b3d7a}
+
+    /* Status dots */
+    .status-indicator{display:flex; align-items:center; gap:6px; margin-right:8px}
+    .status-dot{display:inline-block; width:8px; height:8px; border-radius:50%}
+    .status-online{background:var(--color-success)}
+    .status-offline{background:var(--status-critical)}
+
+    /* Map */
+    .map-wrapper{position:relative; width:100%; height:380px}
+    .map-full{height:calc(100vh - 180px)}
+    .map-container{width:100%; height:100%; border-radius:10px; overflow:hidden; border:1px solid var(--border-primary)}
+    .map-controls{position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:8px; z-index:1000}
+    .map-control-btn{background:var(--bg-elevated); border:1px solid var(--border-primary); color:var(--text-primary);
+      padding:8px 10px; border-radius:8px; cursor:pointer; font-size:12px}
+    .map-control-btn:hover{background:var(--bg-tertiary)}
+    .marker-popup{min-width:220px; color:#111}
+    .custom-marker .marker-pin{display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
+      box-shadow:0 2px 8px rgba(0,0,0,.35); color:#fff; font-size:14px}
+    .marker-SEGNALAZIONE{background:#ef4444}
+    .marker-INTERVENTO{background:#2563eb}
+    .marker-SQUADRA{background:#10b981}
+    .marker-POI{background:#7c3aed}
+
+    /* Chips / tags */
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border-primary); background:var(--bg-elevated); color:var(--text-secondary); font-size:11px}
+
+    /* Utilities */
+    .mt-8{margin-top:8px} .mt-12{margin-top:12px} .mt-16{margin-top:16px} .mt-20{margin-top:20px}
+    .mb-8{margin-bottom:8px} .mb-12{margin-bottom:12px} .mb-16{margin-bottom:16px}
+    .flex{display:flex} .items-center{align-items:center} .justify-between{justify-content:space-between} .gap-8{gap:8px} .gap-12{gap:12px}
+    .text-secondary{color:var(--text-secondary)} .text-tertiary{color:var(--text-tertiary)} .text-right{text-align:right}
+    .w-100{width:100%} .nowrap{white-space:nowrap}
+    .center{display:flex; align-items:center; justify-content:center}
+  </style>
 </head>
 <body>
-    <div id="app">
-        <!-- HEADER -->
-        <header class="app-header">
-            <div class="header-left">
-                <div class="logo">
-                    <span class="logo-icon">⚡</span>
-                    <span class="logo-text">THUNDER</span>
-                    <span class="logo-subtitle">Sala Operativa</span>
-                </div>
-            </div>
-            
-            <div class="header-center">
-                <div class="current-time">
-                    <span class="time-label">ORA SISTEMA</span>
-                    <div class="time-value">{{ currentTime }}</div>
-                    <div class="date-value">{{ currentDate }}</div>
-                </div>
-            </div>
-            
-            <div class="header-right">
-                <div class="header-indicators">
-                    <div class="indicator">
-                        <span class="indicator-label">Segnalazioni</span>
-                        <span class="indicator-value critical">{{ stats.segnalazioniAperte }}</span>
-                    </div>
-                    <div class="indicator">
-                        <span class="indicator-label">Interventi</span>
-                        <span class="indicator-value warning">{{ stats.interventiAttivi }}</span>
-                    </div>
-                    <div class="indicator">
-                        <span class="indicator-label">Squadre</span>
-                        <span class="indicator-value success">{{ stats.squadreDisponibili }}/{{ stats.squadreTotali }}</span>
-                    </div>
-                </div>
-            </div>
-        </header>
+  <div id="app" class="app-container" v-cloak>
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">THUNDER</span>
+          <span class="logo-subtitle">Sala Operativa</span>
+        </div>
+      </div>
 
-        <!-- BODY -->
-        <div class="app-body">
-            <!-- SIDEBAR -->
-            <aside class="app-sidebar">
-                <nav class="sidebar-nav">
-                    <a @click="currentView = 'dashboard'" :class="['nav-item', { active: currentView === 'dashboard' }]">
-                        <span class="nav-icon">📊</span>
-                        <span class="nav-label">Dashboard</span>
-                    </a>
-                    
-                    <a @click="currentView = 'segnalazioni'" :class="['nav-item', { active: currentView === 'segnalazioni' }]">
-                        <span class="nav-icon">⚠️</span>
-                        <span class="nav-label">Segnalazioni</span>
-                        <span v-if="stats.segnalazioniAperte > 0" class="nav-badge">{{ stats.segnalazioniAperte }}</span>
-                    </a>
-                    
-                    <a @click="currentView = 'interventi'" :class="['nav-item', { active: currentView === 'interventi' }]">
-                        <span class="nav-icon">🛠️</span>
-                        <span class="nav-label">Interventi</span>
-                        <span v-if="stats.interventiAttivi > 0" class="nav-badge">{{ stats.interventiAttivi }}</span>
-                    </a>
-                    
-                    <a @click="currentView = 'comunicazioni'" :class="['nav-item', { active: currentView === 'comunicazioni' }]">
-                        <span class="nav-icon">📞</span>
-                        <span class="nav-label">Comunicazioni</span>
-                    </a>
-                    
-                    <a @click="currentView = 'squadre'" :class="['nav-item', { active: currentView === 'squadre' }]">
-                        <span class="nav-icon">👥</span>
-                        <span class="nav-label">Squadre</span>
-                    </a>
-                    
-                    <a @click="currentView = 'mappa'" :class="['nav-item', { active: currentView === 'mappa' }]">
-                        <span class="nav-icon">🗺️</span>
-                        <span class="nav-label">Mappa</span>
-                    </a>
-                    
-                    <div class="nav-divider"></div>
-                    
-                    <a @click="currentView = 'rubrica'" :class="['nav-item', { active: currentView === 'rubrica' }]">
-                        <span class="nav-icon">📖</span>
-                        <span class="nav-label">Rubrica</span>
-                    </a>
-                    
-                    <a @click="currentView = 'diario'" :class="['nav-item', { active: currentView === 'diario' }]">
-                        <span class="nav-icon">📝</span>
-                        <span class="nav-label">Diario Sala</span>
-                    </a>
-                </nav>
-                
-                <div class="sidebar-quick-actions">
-                    <button @click="showNewSegnalazione" class="btn btn-primary btn-block">
-                        ➕ Nuova Segnalazione
-                    </button>
-                    <button @click="showNewComunicazione" class="btn btn-secondary btn-block" style="margin-top: 10px;">
-                        ➕ Comunicazione
-                    </button>
-                </div>
-            </aside>
+      <div class="header-center">
+        <div class="current-time">
+          <span class="time-label">ORA SISTEMA</span>
+          <span class="time-value">{{ time.now }}</span>
+          <span class="date-value">{{ time.date }}</span>
+        </div>
+      </div>
 
-            <!-- MAIN CONTENT -->
-            <main class="app-main">
-                <div class="content-header">
-                    <div class="breadcrumb">{{ viewTitle }}</div>
-                    <div class="content-actions">
-                        <div class="search-bar">
-                            <input type="search" v-model="searchQuery" placeholder="Cerca... (Ctrl+K)" />
-                        </div>
-                        <button @click="exportData" class="btn btn-secondary">💾 Export</button>
-                    </div>
-                </div>
-                
-                <div class="content-body">
-                    <!-- DASHBOARD VIEW -->
-                    <div v-if="currentView === 'dashboard'">
-                        <div class="dashboard-grid">
-                            <div class="stat-card">
-                                <div class="stat-card-header">
-                                    <span class="stat-card-title">Segnalazioni Aperte</span>
-                                    <span class="stat-card-icon">⚠️</span>
-                                </div>
-                                <div class="stat-card-value text-critical">{{ stats.segnalazioniAperte }}</div>
-                                <div class="stat-card-label">di cui {{ segnalazioniCritiche.length }} critiche</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-header">
-                                    <span class="stat-card-title">Interventi Attivi</span>
-                                    <span class="stat-card-icon">🛠️</span>
-                                </div>
-                                <div class="stat-card-value text-high">{{ stats.interventiAttivi }}</div>
-                                <div class="stat-card-label">in corso</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-header">
-                                    <span class="stat-card-title">Squadre Disponibili</span>
-                                    <span class="stat-card-icon">👥</span>
-                                </div>
-                                <div class="stat-card-value text-low">{{ stats.squadreDisponibili }}</div>
-                                <div class="stat-card-label">su {{ stats.squadreTotali }} totali</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-card-header">
-                                    <span class="stat-card-title">Comunicazioni Oggi</span>
-                                    <span class="stat-card-icon">📞</span>
-                                </div>
-                                <div class="stat-card-value text-medium">{{ comunicazioniOggi.length }}</div>
-                                <div class="stat-card-label">ultime 24h</div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">⚡ Attività Recenti</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="timeline">
-                                    <div v-for="evento in eventiRecenti" :key="evento.id" class="timeline-item">
-                                        <div class="timeline-time">{{ formatTime(evento.timestamp) }}</div>
-                                        <div class="timeline-content">
-                                            <strong>{{ evento.tipo }}</strong>: {{ evento.descrizione }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SEGNALAZIONI VIEW -->
-                    <div v-if="currentView === 'segnalazioni'">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Codice</th>
-                                        <th>Tipologia</th>
-                                        <th>Descrizione</th>
-                                        <th>Località</th>
-                                        <th>Priorità</th>
-                                        <th>Stato</th>
-                                        <th>Data</th>
-                                        <th>Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="seg in filteredSegnalazioni" :key="seg.id">
-                                        <td><strong>{{ seg.codice }}</strong></td>
-                                        <td>{{ seg.tipologia }}</td>
-                                        <td>{{ seg.descrizione }}</td>
-                                        <td>{{ seg.localita.comune }}</td>
-                                        <td><span :class="'badge badge-' + seg.priorita.toLowerCase()">{{ seg.priorita }}</span></td>
-                                        <td><span :class="'badge badge-' + seg.stato.toLowerCase()">{{ seg.stato }}</span></td>
-                                        <td>{{ formatDate(seg.dataCreazione) }}</td>
-                                        <td class="actions-cell">
-                                            <button @click="viewSegnalazione(seg)" class="btn btn-sm btn-secondary">👁️</button>
-                                            <button @click="editSegnalazione(seg)" class="btn btn-sm btn-secondary">✏️</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- INTERVENTI VIEW -->
-                    <div v-if="currentView === 'interventi'">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Codice</th>
-                                        <th>Segnalazione</th>
-                                        <th>Descrizione</th>
-                                        <th>Squadre</th>
-                                        <th>Stato</th>
-                                        <th>Inizio</th>
-                                        <th>Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="int in interventi" :key="int.id">
-                                        <td><strong>{{ int.codice }}</strong></td>
-                                        <td>{{ int.segnalazioneCodice }}</td>
-                                        <td>{{ int.descrizione }}</td>
-                                        <td>{{ int.squadreAssegnate.length }}</td>
-                                        <td><span :class="'badge badge-' + int.stato.toLowerCase()">{{ int.stato }}</span></td>
-                                        <td>{{ formatDate(int.dataInizio) }}</td>
-                                        <td class="actions-cell">
-                                            <button @click="viewIntervento(int)" class="btn btn-sm btn-secondary">👁️</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- COMUNICAZIONI VIEW -->
-                    <div v-if="currentView === 'comunicazioni'">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="timeline">
-                                    <div v-for="com in comunicazioni" :key="com.id" class="timeline-item">
-                                        <div class="timeline-time">{{ formatDateTime(com.timestamp) }}</div>
-                                        <div class="timeline-content">
-                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                                <div>
-                                                    <span :class="'badge badge-' + (com.tipo === 'ENTRATA' ? 'medium' : 'low')">{{ com.tipo }}</span>
-                                                    <span class="badge" style="margin-left: 5px;">{{ com.canale }}</span>
-                                                </div>
-                                                <span :class="'badge badge-' + com.priorita.toLowerCase()">{{ com.priorita }}</span>
-                                            </div>
-                                            <div><strong>Da:</strong> {{ com.mittente }} <strong>A:</strong> {{ com.destinatario }}</div>
-                                            <div style="margin-top: 10px;">{{ com.contenuto }}</div>
-                                            <div style="margin-top: 10px; font-size: 12px; color: var(--text-tertiary);">
-                                                Operatore: {{ com.operatore }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SQUADRE VIEW -->
-                    <div v-if="currentView === 'squadre'">
-                        <div class="dashboard-grid">
-                            <div v-for="squadra in squadre" :key="squadra.id" class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">{{ squadra.nome }}</h3>
-                                    <span :class="'badge badge-' + squadra.stato.toLowerCase()">{{ squadra.stato }}</span>
-                                </div>
-                                <div class="card-body">
-                                    <div style="margin-bottom: 10px;"><strong>Codice:</strong> {{ squadra.codice }}</div>
-                                    <div style="margin-bottom: 10px;"><strong>Specializzazione:</strong> {{ squadra.specializzazione }}</div>
-                                    <div style="margin-bottom: 10px;"><strong>Caposquadra:</strong> {{ squadra.caposquadra }}</div>
-                                    <div style="margin-bottom: 10px;"><strong>Componenti:</strong> {{ squadra.componenti.length }}</div>
-                                    <div style="margin-bottom: 10px;"><strong>Contatto:</strong> {{ squadra.contattoTelefonico }}</div>
-                                    <div v-if="squadra.interventoCorrente" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-primary);">
-                                        <strong>Intervento in corso:</strong> {{ squadra.interventoCorrente }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MAPPA VIEW -->
-                    <div v-if="currentView === 'mappa'">
-                        <div id="map" class="map-container"></div>
-                    </div>
-
-                    <!-- RUBRICA VIEW -->
-                    <div v-if="currentView === 'rubrica'">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Organizzazione</th>
-                                        <th>Ruolo</th>
-                                        <th>Telefono</th>
-                                        <th>Email</th>
-                                        <th>Categoria</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="contatto in contatti" :key="contatto.id">
-                                        <td><strong>{{ contatto.nome }} {{ contatto.cognome }}</strong></td>
-                                        <td>{{ contatto.organizzazione }}</td>
-                                        <td>{{ contatto.ruolo }}</td>
-                                        <td>{{ contatto.telefono }}</td>
-                                        <td>{{ contatto.email }}</td>
-                                        <td><span class="badge badge-medium">{{ contatto.categoria }}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- DIARIO VIEW -->
-                    <div v-if="currentView === 'diario'">
-                        <div class="card mb-20">
-                            <div class="card-header">
-                                <h3 class="card-title">Nuovo Evento</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label">Tipologia</label>
-                                        <select v-model="nuovoDiario.tipologia" class="form-select">
-                                            <option>EVENTO</option>
-                                            <option>COMUNICAZIONE</option>
-                                            <option>DECISIONE</option>
-                                            <option>NOTA</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Importanza</label>
-                                        <select v-model="nuovoDiario.importanza" class="form-select">
-                                            <option>NORMALE</option>
-                                            <option>RILEVANTE</option>
-                                            <option>CRITICA</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Contenuto</label>
-                                    <textarea v-model="nuovoDiario.contenuto" class="form-textarea"></textarea>
-                                </div>
-                                <button @click="aggiungiDiario" class="btn btn-primary">✅ Registra</button>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Registro Eventi</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="timeline">
-                                    <div v-for="voce in diarioSala" :key="voce.id" class="timeline-item">
-                                        <div class="timeline-time">{{ formatDateTime(voce.timestamp) }}</div>
-                                        <div class="timeline-content">
-                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                                <span class="badge badge-medium">{{ voce.tipologia }}</span>
-                                                <span :class="'badge badge-' + (voce.importanza === 'CRITICA' ? 'critical' : voce.importanza === 'RILEVANTE' ? 'high' : 'low')">
-                                                    {{ voce.importanza }}
-                                                </span>
-                                            </div>
-                                            <div>{{ voce.contenuto }}</div>
-                                            <div style="margin-top: 10px; font-size: 12px; color: var(--text-tertiary);">
-                                                Operatore: {{ voce.operatore }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+      <div class="header-right">
+        <div class="header-indicators">
+          <div class="indicator">
+            <span class="indicator-label">Segnalazioni</span>
+            <span class="indicator-value critical">{{ headerStats.segnalazioni }}</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">Interventi</span>
+            <span class="indicator-value warning">{{ headerStats.interventi }}</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">Squadre</span>
+            <span class="indicator-value success">{{ headerStats.squadreDisponibili }}/{{ headerStats.squadreTotali }}</span>
+          </div>
         </div>
 
-        <!-- MODAL NUOVA SEGNALAZIONE -->
-        <div v-if="showModalSegnalazione" class="modal-overlay" @click="closeModal">
-            <div class="modal-container" @click.stop>
-                <div class="modal-header">
-                    <h3 class="modal-title">Nuova Segnalazione</h3>
-                    <button class="modal-close" @click="closeModal">×</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Tipologia *</label>
-                            <select v-model="nuovaSegnalazione.tipologia" class="form-select">
-                                <option>ALLAGAMENTO</option>
-                                <option>FRANA</option>
-                                <option>ALBERO_CADUTO</option>
-                                <option>INCENDIO</option>
-                                <option>BLACKOUT</option>
-                                <option>ALTRO</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Priorità *</label>
-                            <select v-model="nuovaSegnalazione.priorita" class="form-select">
-                                <option>CRITICA</option>
-                                <option>ALTA</option>
-                                <option>MEDIA</option>
-                                <option>BASSA</option>
-                            </select>
-                        </div>
-                    </div>
+        <button class="btn btn-icon" title="Impostazioni" @click="notify('info','Impostazioni non ancora disponibili')">
+          ⚙
+        </button>
 
-                    <div class="form-group">
-                        <label class="form-label">Descrizione *</label>
-                        <textarea v-model="nuovaSegnalazione.descrizione" class="form-textarea"></textarea>
-                    </div>
+        <div class="user-menu">
+          <span class="user-name">{{ currentUser.name }}</span>
+          <span class="user-role">{{ currentUser.role }}</span>
+        </div>
+      </div>
+    </header>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Nome Richiedente</label>
-                            <input v-model="nuovaSegnalazione.richiedente.nome" type="text" class="form-input" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Telefono Richiedente</label>
-                            <input v-model="nuovaSegnalazione.richiedente.telefono" type="text" class="form-input" />
-                        </div>
-                    </div>
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav">
+        <router-link to="/dashboard" class="router-link">
+          🧭 <span class="nav-label">Dashboard</span>
+        </router-link>
 
-                    <div class="form-group">
-                        <label class="form-label">Indirizzo *</label>
-                        <input v-model="nuovaSegnalazione.localita.indirizzo" type="text" class="form-input" />
-                    </div>
+        <router-link to="/segnalazioni" class="router-link">
+          🚨 <span class="nav-label">Segnalazioni</span>
+          <span class="nav-badge">{{ counts.segnalazioni }}</span>
+        </router-link>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Comune *</label>
-                            <input v-model="nuovaSegnalazione.localita.comune" type="text" class="form-input" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Provincia</label>
-                            <input v-model="nuovaSegnalazione.localita.provincia" type="text" class="form-input" />
-                        </div>
-                    </div>
+        <router-link to="/interventi" class="router-link">
+          🛠 <span class="nav-label">Interventi</span>
+          <span class="nav-badge">{{ counts.interventi }}</span>
+        </router-link>
 
-                    <div class="form-group">
-                        <label class="form-label">Note</label>
-                        <textarea v-model="nuovaSegnalazione.note" class="form-textarea" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button @click="closeModal" class="btn btn-secondary">Annulla</button>
-                    <button @click="salvaSegnalazione" class="btn btn-primary">💾 Salva Segnalazione</button>
-                </div>
-            </div>
+        <router-link to="/comunicazioni" class="router-link">
+          🗨️ <span class="nav-label">Comunicazioni</span>
+        </router-link>
+
+        <router-link to="/squadre" class="router-link">
+          👥 <span class="nav-label">Squadre</span>
+        </router-link>
+
+        <router-link to="/mappa" class="router-link">
+          🗺️ <span class="nav-label">Mappa</span>
+        </router-link>
+
+        <div class="nav-divider"></div>
+
+        <router-link to="/tasks" class="router-link">
+          ✅ <span class="nav-label">Task</span>
+        </router-link>
+
+        <router-link to="/rubrica" class="router-link">
+          📇 <span class="nav-label">Rubrica</span>
+        </router-link>
+
+        <router-link to="/diario" class="router-link">
+          📓 <span class="nav-label">Diario Sala</span>
+        </router-link>
+
+        <div class="nav-divider"></div>
+
+        <router-link to="/analytics" class="router-link">
+          📊 <span class="nav-label">Analytics</span>
+        </router-link>
+      </nav>
+
+      <!-- Quick Actions -->
+      <div class="sidebar-quick-actions">
+        <button class="btn btn-primary btn-block" @click="$router.push('/segnalazioni/new')">
+          + Nuova Segnalazione
+        </button>
+        <button class="btn btn-secondary btn-block" @click="$router.push('/comunicazioni')">
+          + Registra Comunicazione
+        </button>
+      </div>
+
+      <!-- Contatti Emergenza -->
+      <div class="sidebar-widget">
+        <h4 class="widget-title">Contatti Emergenza</h4>
+        <div class="contact-list">
+          <div class="contact-item">
+            <span class="contact-name">VVF Centrale</span>
+            <span class="contact-phone">115</span>
+          </div>
+          <div class="contact-item">
+            <span class="contact-name">118 Operativo</span>
+            <span class="contact-phone">118</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="app-main">
+      <div class="content-header">
+        <div class="breadcrumb">
+          <span>{{ breadcrumb }}</span>
         </div>
 
-        <!-- MODAL COMUNICAZIONE -->
-        <div v-if="showModalComunicazione" class="modal-overlay" @click="closeModalComunicazione">
-            <div class="modal-container" @click.stop>
-                <div class="modal-header">
-                    <h3 class="modal-title">Nuova Comunicazione</h3>
-                    <button class="modal-close" @click="closeModalComunicazione">×</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Tipo *</label>
-                            <select v-model="nuovaComunicazione.tipo" class="form-select">
-                                <option>ENTRATA</option>
-                                <option>USCITA</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Canale *</label>
-                            <select v-model="nuovaComunicazione.canale" class="form-select">
-                                <option>TELEFONO</option>
-                                <option>RADIO</option>
-                                <option>EMAIL</option>
-                                <option>PERSONA</option>
-                                <option>APP</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Mittente *</label>
-                            <input v-model="nuovaComunicazione.mittente" type="text" class="form-input" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Destinatario *</label>
-                            <input v-model="nuovaComunicazione.destinatario" type="text" class="form-input" />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Priorità</label>
-                        <select v-model="nuovaComunicazione.priorita" class="form-select">
-                            <option>ALTA</option>
-                            <option>MEDIA</option>
-                            <option>BASSA</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Contenuto *</label>
-                        <textarea v-model="nuovaComunicazione.contenuto" class="form-textarea"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button @click="closeModalComunicazione" class="btn btn-secondary">Annulla</button>
-                    <button @click="salvaComunicazione" class="btn btn-primary">💾 Registra</button>
-                </div>
-            </div>
+        <div class="content-actions">
+          <div class="search-bar">
+            <input type="search" placeholder="Cerca... (Ctrl+K)" v-model="globalQuery" @keydown.enter="openSearchModal" />
+          </div>
+          <button class="btn btn-icon" title="Filtri globali" @click="notify('info','Filtri globali in arrivo')">🔎</button>
         </div>
+      </div>
 
-        <!-- TOAST NOTIFICATIONS -->
-        <div class="toast-container">
-            <div v-for="toast in toasts" :key="toast.id" :class="['toast', 'toast-' + toast.type]">
-                {{ toast.message }}
-            </div>
+      <div class="content-body">
+        <router-view />
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span class="footer-text">
+          Thunder v1.0.0 | Ultimo aggiornamento: {{ time.footer }}
+        </span>
+      </div>
+      <div class="footer-center">
+        <div class="status-indicator">
+          <span class="status-dot status-online"></span><span>Sistema Operativo</span>
         </div>
+        <div class="status-indicator">
+          <span class="status-dot status-online"></span><span>Database Locale</span>
+        </div>
+      </div>
+      <div class="footer-right">
+        <button class="btn btn-sm btn-ghost" @click="exportFullDatabase">Export Dati</button>
+        <button class="btn btn-sm btn-ghost" @click="backupNow">Backup</button>
+      </div>
+    </footer>
+
+    <!-- TOASTS -->
+    <div class="toast-container">
+      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">
+        {{ t.message }}
+      </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Dexie.js for IndexedDB -->
-    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
-    
-    <!-- Vue 3 -->
-    <script src="https://unpkg.com/vue@3.3.4/dist/vue.global.js"></script>
+    <!-- MODAL Ricerca Globale -->
+    <div class="modal" v-if="searchModal.open">
+      <div class="modal-overlay" @click="closeSearchModal"></div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>Ricerca Globale</h3>
+          <button class="modal-close" @click="closeSearchModal">×</button>
+        </div>
+        <div class="modal-body">
+          <input class="form-input w-100" placeholder="Cerca segnalazioni, interventi, squadre, contatti..."
+                 v-model="searchModal.query" @input="performGlobalSearch" />
+          <div class="mt-12">
+            <div v-if="searchModal.loading" class="text-tertiary">Ricerca in corso...</div>
+            <div v-else-if="searchModal.results.length === 0" class="text-tertiary">Nessun risultato</div>
+            <div v-else class="grid grid-auto">
+              <div class="card" v-for="r in searchModal.results" :key="r.type + '-' + r.id">
+                <div class="card-header">
+                  <div class="chip mono">{{ r.type.toUpperCase() }}</div>
+                  <div class="chip" v-if="r.badge">{{ r.badge }}</div>
+                </div>
+                <div class="card-body">
+                  <div class="mono" v-if="r.codice"><strong>{{ r.codice }}</strong></div>
+                  <div style="font-weight:600">{{ r.title }}</div>
+                  <div class="text-secondary">{{ r.subtitle }}</div>
+                </div>
+                <div class="card-footer">
+                  <button class="btn btn-sm" @click="goToSearchResult(r)">Apri</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-right">
+          <button class="btn" @click="closeSearchModal">Chiudi</button>
+        </div>
+      </div>
+    </div>
 
-    <script>
-        const { createApp } = Vue;
+  </div>
 
-        // Database Setup
-        const db = new Dexie('ThunderDB');
-        db.version(1).stores({
-            segnalazioni: '++id, codice, stato, priorita, tipologia, dataCreazione',
-            interventi: '++id, codice, stato, segnalazioneId, dataInizio',
-            comunicazioni: '++id, tipo, timestamp',
-            squadre: '++id, codice, stato',
-            contatti: '++id, categoria, cognome',
-            diarioSala: '++id, timestamp, tipologia'
+  <!-- Libraries (CDN) -->
+  <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+  <script src="https://unpkg.com/pinia@2/dist/pinia.iife.prod.js"></script>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1/locale/it.js"></script>
+
+  <!-- App Script -->
+  <script>
+    // Setup Day.js locale
+    dayjs.locale('it');
+
+    // ===========================
+    // Database (Dexie) - ThunderDB
+    // ===========================
+    const db = new Dexie('ThunderDB');
+    db.version(1).stores({
+      segnalazioni: '++id, codice, stato, priorita, tipologia, dataCreazione',
+      interventi: '++id, codice, stato, segnalazioneId, dataInizio',
+      comunicazioni: '++id, tipo, timestamp, segnalazioneId, interventoId',
+      squadre: '++id, codice, stato, specializzazione',
+      puntiMappa: '++id, tipologia, riferimentoTipo, riferimentoId',
+      tasks: '++id, stato, priorita, scadenza, assegnatoA',
+      contatti: '++id, categoria, organizzazione, cognome',
+      diarioSala: '++id, timestamp, turno, tipologia',
+      configurazioni: 'chiave'
+    });
+
+    async function initializeSampleData(){
+      const cSeg = await db.segnalazioni.count();
+      if(cSeg === 0){
+        await db.segnalazioni.bulkAdd([
+          {
+            codice:'SEG-2024-0001', tipologia:'ALLAGAMENTO', priorita:'ALTA', stato:'APERTA',
+            richiedente:{ nome:'Mario Bianchi', telefono:'3331234567', riferimento:'' },
+            descrizione:'Allagamento su strada principale',
+            localita:{ indirizzo:'Via Roma 15', comune:'Milano', provincia:'MI', coordinate:{ lat:45.4642, lng:9.19 } },
+            dataCreazione: Date.now(), dataAggiornamento: Date.now(),
+            comunicazioniIds:[], allegati:[], note:'', operatoreCreazione:'M. Rossi', tags:['idraulico','viabilità']
+          },
+          {
+            codice:'SEG-2024-0002', tipologia:'INCENDIO', priorita:'CRITICA', stato:'IN_CORSO',
+            richiedente:{ nome:'Laura Verdi', telefono:'3399876543', riferimento:'' },
+            descrizione:'Incendio boschivo in zona collinare',
+            localita:{ indirizzo:'Località Bosco', comune:'Genova', provincia:'GE', coordinate:{ lat:44.4056, lng:8.9463 } },
+            dataCreazione: Date.now()-3600_000, dataAggiornamento: Date.now(),
+            comunicazioniIds:[], allegati:[], note:'Vento forte', operatoreCreazione:'L. Neri', tags:['VVF','bosco']
+          },
+          {
+            codice:'SEG-2024-0003', tipologia:'VIABILITA', priorita:'MEDIA', stato:'APERTA',
+            richiedente:{ nome:'Comune', telefono:'02-000000', riferimento:'' },
+            descrizione:'Albero caduto su carreggiata',
+            localita:{ indirizzo:'SP 412', comune:'Pavia', provincia:'PV', coordinate:{ lat:45.1847, lng:9.1582 } },
+            dataCreazione: Date.now()-7200_000, dataAggiornamento: Date.now()-3600_000,
+            comunicazioniIds:[], allegati:[], note:'', operatoreCreazione:'M. Conti', tags:['strade']
+          }
+        ]);
+
+        await db.interventi.add({
+          codice:'INT-2024-0001', segnalazioneId:2, tipologia:'INCENDIO', stato:'IN_CORSO',
+          priorita:'CRITICA', descrizione:'Spegnimento focolaio principale',
+          localita:{ indirizzo:'Località Bosco', comune:'Genova', provincia:'GE'},
+          dataInizio: Date.now()-3500_000, dataFine:null, squadreAssegnate:[1],
+          risorseImpiegate:{ personale:6, mezzi:['APS','Pickup'], attrezzature:['Motopompa'] },
+          comunicazioniIds:[], checkpoints:[], risultato:null, noteOperative:'Vento SF', coordinatoreId:1, allegati:[], tags:['VVF']
         });
 
-        createApp({
-            data() {
-                return {
-                    currentView: 'dashboard',
-                    currentTime: '',
-                    currentDate: '',
-                    searchQuery: '',
-                    
-                    // Data
-                    segnalazioni: [],
-                    interventi: [],
-                    comunicazioni: [],
-                    squadre: [],
-                    contatti: [],
-                    diarioSala: [],
-                    
-                    // Modals
-                    showModalSegnalazione: false,
-                    showModalComunicazione: false,
-                    
-                    // Forms
-                    nuovaSegnalazione: this.getEmptySegnalazione(),
-                    nuovaComunicazione: this.getEmptyComunicazione(),
-                    nuovoDiario: this.getEmptyDiario(),
-                    
-                    // Toasts
-                    toasts: [],
-                    toastId: 0,
-                    
-                    // Map
-                    map: null
-                }
-            },
-            
-            computed: {
-                viewTitle() {
-                    const titles = {
-                        dashboard: 'Dashboard',
-                        segnalazioni: 'Segnalazioni',
-                        interventi: 'Interventi',
-                        comunicazioni: 'Comunicazioni',
-                        squadre: 'Squadre',
-                        mappa: 'Mappa Operativa',
-                        rubrica: 'Rubrica Contatti',
-                        diario: 'Diario di Sala'
-                    };
-                    return titles[this.currentView] || 'Thunder';
-                },
-                
-                stats() {
-                    return {
-                        segnalazioniAperte: this.segnalazioni.filter(s => s.stato === 'APERTA' || s.stato === 'IN_CORSO').length,
-                        interventiAttivi: this.interventi.filter(i => i.stato === 'IN_CORSO').length,
-                        squadreDisponibili: this.squadre.filter(s => s.stato === 'DISPONIBILE').length,
-                        squadreTotali: this.squadre.length
-                    };
-                },
-                
-                segnalazioniCritiche() {
-                    return this.segnalazioni.filter(s => s.priorita === 'CRITICA' && s.stato !== 'CHIUSA');
-                },
-                
-                comunicazioniOggi() {
-                    const oggi = new Date().setHours(0,0,0,0);
-                    return this.comunicazioni.filter(c => new Date(c.timestamp).setHours(0,0,0,0) === oggi);
-                },
-                
-                eventiRecenti() {
-                    const eventi = [];
-                    
-                    this.segnalazioni.slice(-5).forEach(s => {
-                        eventi.push({
-                            id: 'seg-' + s.id,
-                            timestamp: s.dataCreazione,
-                            tipo: 'SEGNALAZIONE',
-                            descrizione: `Nuova segnalazione ${s.codice}: ${s.descrizione}`
-                        });
-                    });
-                    
-                    this.comunicazioni.slice(-5).forEach(c => {
-                        eventi.push({
-                            id: 'com-' + c.id,
-                            timestamp: c.timestamp,
-                            tipo: 'COMUNICAZIONE',
-                            descrizione: `${c.tipo} da ${c.mittente}: ${c.contenuto.substring(0, 50)}...`
-                        });
-                    });
-                    
-                    return eventi.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
-                },
-                
-                filteredSegnalazioni() {
-                    let result = this.segnalazioni;
-                    if (this.searchQuery) {
-                        const q = this.searchQuery.toLowerCase();
-                        result = result.filter(s => 
-                            s.codice.toLowerCase().includes(q) ||
-                            s.descrizione.toLowerCase().includes(q) ||
-                            s.localita.comune.toLowerCase().includes(q)
-                        );
-                    }
-                    return result.sort((a, b) => b.dataCreazione - a.dataCreazione);
-                }
-            },
-            
-            methods: {
-                // Init
-                async loadData() {
-                    this.segnalazioni = await db.segnalazioni.toArray();
-                    this.interventi = await db.interventi.toArray();
-                    this.comunicazioni = await db.comunicazioni.toArray();
-                    this.squadre = await db.squadre.toArray();
-                    this.contatti = await db.contatti.toArray();
-                    this.diarioSala = await db.diarioSala.reverse().toArray();
-                    
-                    // Se non ci sono dati, inizializza con esempi
-                    if (this.segnalazioni.length === 0) {
-                        await this.initSampleData();
-                    }
-                },
-                
-                async initSampleData() {
-                    // Segnalazioni
-                    await db.segnalazioni.bulkAdd([
-                        {
-                            codice: 'SEG-2024-0001',
-                            tipologia: 'ALLAGAMENTO',
-                            priorita: 'ALTA',
-                            stato: 'APERTA',
-                            richiedente: { nome: 'Mario Rossi', telefono: '333-1234567' },
-                            descrizione: 'Allagamento strada principale centro città',
-                            localita: { indirizzo: 'Via Roma 15', comune: 'Milano', provincia: 'MI', coordinate: { lat: 45.4642, lng: 9.1900 } },
-                            dataCreazione: Date.now() - 3600000,
-                            dataAggiornamento: Date.now() - 3600000,
-                            operatoreCreazione: 'M. Bianchi',
-                            note: '',
-                            tags: ['viabilità', 'meteo']
-                        },
-                        {
-                            codice: 'SEG-2024-0002',
-                            tipologia: 'ALBERO_CADUTO',
-                            priorita: 'CRITICA',
-                            stato: 'IN_CORSO',
-                            richiedente: { nome: 'Comune', telefono: '112' },
-                            descrizione: 'Albero caduto su strada provinciale blocca traffico',
-                            localita: { indirizzo: 'SP45 km 12', comune: 'Bergamo', provincia: 'BG', coordinate: { lat: 45.6983, lng: 9.6773 } },
-                            dataCreazione: Date.now() - 1800000,
-                            dataAggiornamento: Date.now() - 900000,
-                            operatoreCreazione: 'G. Verdi',
-                            note: 'Intervento squadra SAF in corso',
-                            tags: ['viabilità', 'urgente']
-                        }
-                    ]);
-                    
-                    // Interventi
-                    await db.interventi.bulkAdd([
-                        {
-                            codice: 'INT-2024-0001',
-                            segnalazioneId: 2,
-                            segnalazioneCodice: 'SEG-2024-0002',
-                            tipologia: 'RIMOZIONE_OSTACOLO',
-                            stato: 'IN_CORSO',
-                            priorita: 'CRITICA',
-                            descrizione: 'Rimozione albero caduto SP45',
-                            dataInizio: Date.now() - 900000,
-                            squadreAssegnate: [1, 2],
-                            noteOperative: 'Utilizzare motosega e mezzo sollevamento'
-                        }
-                    ]);
-                    
-                    // Comunicazioni
-                    await db.comunicazioni.bulkAdd([
-                        {
-                            tipo: 'ENTRATA',
-                            canale: 'TELEFONO',
-                            timestamp: Date.now() - 7200000,
-                            mittente: 'Cittadino M. Rossi',
-                            destinatario: 'Sala Operativa',
-                            contenuto: 'Segnalazione allagamento Via Roma',
-                            priorita: 'ALTA',
-                            operatore: 'M. Bianchi'
-                        },
-                        {
-                            tipo: 'USCITA',
-                            canale: 'RADIO',
-                            timestamp: Date.now() - 3600000,
-                            mittente: 'Sala Operativa',
-                            destinatario: 'Squadra SAF-1',
-                            contenuto: 'Intervento richiesto SP45 km12 per albero caduto',
-                            priorita: 'CRITICA',
-                            operatore: 'G. Verdi'
-                        }
-                    ]);
-                    
-                    // Squadre
-                    await db.squadre.bulkAdd([
-                        {
-                            codice: 'SAF-1',
-                            nome: 'Squadra SAF Alpha',
-                            specializzazione: 'SAF',
-                            stato: 'IMPEGNATA',
-                            componenti: [
-                                { nome: 'Giuseppe Verdi', ruolo: 'Caposquadra' },
-                                { nome: 'Andrea Neri', ruolo: 'Operatore' },
-                                { nome: 'Luca Gialli', ruolo: 'Operatore' }
-                            ],
-                            caposquadra: 'Giuseppe Verdi',
-                            mezzi: ['Pickup 4x4', 'Rimorchio attrezzature'],
-                            interventoCorrente: 'INT-2024-0001',
-                            contattoTelefonico: '335-9876543',
-                            contattoRadio: 'Ch. 3 - SAF1'
-                        },
-                        {
-                            codice: 'LOG-1',
-                            nome: 'Squadra Logistica 1',
-                            specializzazione: 'LOGISTICA',
-                            stato: 'DISPONIBILE',
-                            componenti: [
-                                { nome: 'Marco Blu', ruolo: 'Caposquadra' },
-                                { nome: 'Sara Rossi', ruolo: 'Operatore' }
-                            ],
-                            caposquadra: 'Marco Blu',
-                            mezzi: ['Furgone'],
-                            interventoCorrente: null,
-                            contattoTelefonico: '335-1112222',
-                            contattoRadio: 'Ch. 2 - LOG1'
-                        }
-                    ]);
-                    
-                    // Contatti
-                    await db.contatti.bulkAdd([
-                        {
-                            tipologia: 'ENTE',
-                            categoria: 'VVF',
-                            nome: 'Comando',
-                            cognome: 'VVF Milano',
-                            organizzazione: 'Vigili del Fuoco',
-                            ruolo: 'Comando Provinciale',
-                            telefono: '02-115',
-                            cellulare: '',
-                            email: 'comando.milano@vigilfuoco.it',
-                            radio: '',
-                            indirizzo: { via: 'Via Messina 40', comune: 'Milano', provincia: 'MI' }
-                        },
-                        {
-                            tipologia: 'PERSONA',
-                            categoria: 'SANITARIO',
-                            nome: 'Dott. Giovanni',
-                            cognome: 'Bianchi',
-                            organizzazione: 'AREU 118',
-                            ruolo: 'Medico Coordinatore',
-                            telefono: '02-118-9999',
-                            cellulare: '335-9998887',
-                            email: 'g.bianchi@areu.lombardia.it',
-                            radio: 'Ch. 5',
-                            indirizzo: { via: '', comune: 'Milano', provincia: 'MI' }
-                        }
-                    ]);
-                    
-                    // Diario Sala
-                    await db.diarioSala.bulkAdd([
-                        {
-                            timestamp: Date.now() - 7200000,
-                            operatore: 'M. Bianchi',
-                            turno: '08:00-16:00',
-                            tipologia: 'EVENTO',
-                            contenuto: 'Apertura sala operativa - turno mattina',
-                            importanza: 'NORMALE'
-                        },
-                        {
-                            timestamp: Date.now() - 3600000,
-                            operatore: 'G. Verdi',
-                            turno: '08:00-16:00',
-                            tipologia: 'DECISIONE',
-                            contenuto: 'Attivata squadra SAF-1 per emergenza SP45',
-                            importanza: 'RILEVANTE'
-                        }
-                    ]);
-                    
-                    await this.loadData();
-                },
-                
-                updateTime() {
-                    const now = new Date();
-                    this.currentTime = now.toLocaleTimeString('it-IT');
-                    this.currentDate = now.toLocaleDateString('it-IT', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    });
-                },
-                
-                // Modals
-                showNewSegnalazione() {
-                    this.nuovaSegnalazione = this.getEmptySegnalazione();
-                    this.showModalSegnalazione = true;
-                },
-                
-                closeModal() {
-                    this.showModalSegnalazione = false;
-                },
-                
-                showNewComunicazione() {
-                    this.nuovaComunicazione = this.getEmptyComunicazione();
-                    this.showModalComunicazione = true;
-                },
-                
-                closeModalComunicazione() {
-                    this.showModalComunicazione = false;
-                },
-                
-                // CRUD Segnalazioni
-                async salvaSegnalazione() {
-                    const anno = new Date().getFullYear();
-                    const count = await db.segnalazioni.count();
-                    const codice = `SEG-${anno}-${String(count + 1).padStart(4, '0')}`;
-                    
-                    const segnalazione = {
-                        ...this.nuovaSegnalazione,
-                        codice,
-                        stato: 'APERTA',
-                        dataCreazione: Date.now(),
-                        dataAggiornamento: Date.now(),
-                        operatoreCreazione: 'Operatore Sistema'
-                    };
-                    
-                    await db.segnalazioni.add(segnalazione);
-                    await this.loadData();
-                    this.closeModal();
-                    this.showToast('success', 'Segnalazione creata con successo');
-                    
-                    // Aggiungi a diario
-                    await db.diarioSala.add({
-                        timestamp: Date.now(),
-                        operatore: 'Sistema',
-                        turno: 'Corrente',
-                        tipologia: 'EVENTO',
-                        contenuto: `Creata nuova segnalazione ${codice}: ${segnalazione.descrizione}`,
-                        importanza: segnalazione.priorita === 'CRITICA' ? 'CRITICA' : 'NORMALE'
-                    });
-                },
-                
-                viewSegnalazione(seg) {
-                    this.showToast('info', `Visualizzazione dettagli ${seg.codice}`);
-                },
-                
-                editSegnalazione(seg) {
-                    this.showToast('info', `Modifica ${seg.codice}`);
-                },
-                
-                // CRUD Comunicazioni
-                async salvaComunicazione() {
-                    const comunicazione = {
-                        ...this.nuovaComunicazione,
-                        timestamp: Date.now(),
-                        operatore: 'Operatore Sistema'
-                    };
-                    
-                    await db.comunicazioni.add(comunicazione);
-                    await this.loadData();
-                    this.closeModalComunicazione();
-                    this.showToast('success', 'Comunicazione registrata');
-                },
-                
-                // Diario
-                async aggiungiDiario() {
-                    if (!this.nuovoDiario.contenuto) {
-                        this.showToast('error', 'Inserire un contenuto');
-                        return;
-                    }
-                    
-                    const voce = {
-                        ...this.nuovoDiario,
-                        timestamp: Date.now(),
-                        operatore: 'Operatore Sistema',
-                        turno: 'Corrente'
-                    };
-                    
-                    await db.diarioSala.add(voce);
-                    await this.loadData();
-                    this.nuovoDiario = this.getEmptyDiario();
-                    this.showToast('success', 'Evento registrato nel diario');
-                },
-                
-                // Export
-                async exportData() {
-                    const data = {
-                        version: '1.0',
-                        exportDate: new Date().toISOString(),
-                        segnalazioni: this.segnalazioni,
-                        interventi: this.interventi,
-                        comunicazioni: this.comunicazioni,
-                        squadre: this.squadre,
-                        contatti: this.contatti,
-                        diarioSala: this.diarioSala
-                    };
-                    
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `thunder-backup-${new Date().toISOString().split('T')[0]}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    
-                    this.showToast('success', 'Dati esportati con successo');
-                },
-                
-                // Helpers
-                getEmptySegnalazione() {
-                    return {
-                        tipologia: 'ALTRO',
-                        priorita: 'MEDIA',
-                        descrizione: '',
-                        richiedente: { nome: '', telefono: '' },
-                        localita: { indirizzo: '', comune: '', provincia: '' },
-                        note: ''
-                    };
-                },
-                
-                getEmptyComunicazione() {
-                    return {
-                        tipo: 'ENTRATA',
-                        canale: 'TELEFONO',
-                        mittente: '',
-                        destinatario: '',
-                        contenuto: '',
-                        priorita: 'MEDIA'
-                    };
-                },
-                
-                getEmptyDiario() {
-                    return {
-                        tipologia: 'EVENTO',
-                        contenuto: '',
-                        importanza: 'NORMALE'
-                    };
-                },
-                
-                formatDate(timestamp) {
-                    return new Date(timestamp).toLocaleDateString('it-IT');
-                },
-                
-                formatTime(timestamp) {
-                    return new Date(timestamp).toLocaleTimeString('it-IT');
-                },
-                
-                formatDateTime(timestamp) {
-                    return new Date(timestamp).toLocaleString('it-IT');
-                },
-                
-                // Toast
-                showToast(type, message) {
-                    const id = ++this.toastId;
-                    this.toasts.push({ id, type, message });
-                    setTimeout(() => {
-                        this.toasts = this.toasts.filter(t => t.id !== id);
-                    }, 5000);
-                },
-                
-                // Map
-                initMap() {
-                    if (this.map) return;
-                    
-                    this.$nextTick(() => {
-                        const mapEl = document.getElementById('map');
-                        if (!mapEl) return;
-                        
-                        this.map = L.map('map').setView([45.4642, 9.1900], 9);
-                        
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors'
-                        }).addTo(this.map);
-                        
-                        // Aggiungi markers segnalazioni
-                        this.segnalazioni.forEach(seg => {
-                            if (seg.localita.coordinate) {
-                                const color = seg.priorita === 'CRITICA' ? 'red' : 
-                                            seg.priorita === 'ALTA' ? 'orange' : 
-                                            seg.priorita === 'MEDIA' ? 'blue' : 'green';
-                                
-                                const icon = L.divIcon({
-                                    html: `<div style="background: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white;"></div>`,
-                                    className: '',
-                                    iconSize: [24, 24]
-                                });
-                                
-                                L.marker([seg.localita.coordinate.lat, seg.localita.coordinate.lng], { icon })
-                                    .addTo(this.map)
-                                    .bindPopup(`
-                                        <strong>${seg.codice}</strong><br>
-                                        ${seg.descrizione}<br>
-                                        <em>${seg.localita.indirizzo}</em>
-                                    `);
-                            }
-                        });
-                    });
-                }
-            },
-            
-            watch: {
-                currentView(newView) {
-                    if (newView === 'mappa') {
-                        this.$nextTick(() => this.initMap());
-                    }
-                }
-            },
-            
-            async mounted() {
-                await this.loadData();
-                this.updateTime();
-                setInterval(() => this.updateTime(), 1000);
+        await db.squadre.bulkAdd([
+          {
+            codice:'SQ-01', nome:'Alfa', specializzazione:'ANTINCENDIO', stato:'IMPEGNATA',
+            componenti:[], caposquadra:'Bianchi', mezzi:['APS-1'], attrezzature:['Tubi','Autobotte'],
+            interventoCorrente:1, posizione:{lat:44.41, lng:8.95}, contattoRadio:'CH12', contattoTelefonico:'345...', noteOperative:'',
+            ultimoAggiornamento:Date.now()
+          },
+          {
+            codice:'SQ-02', nome:'Bravo', specializzazione:'LOGISTICA', stato:'DISPONIBILE',
+            componenti:[], caposquadra:'Rossi', mezzi:['Furgone'], attrezzature:['Transenne'],
+            interventoCorrente:null, posizione:{lat:45.46, lng:9.19}, contattoRadio:'CH05', contattoTelefonico:'346...',
+            noteOperative:'', ultimoAggiornamento:Date.now()
+          }
+        ]);
+
+        await db.comunicazioni.bulkAdd([
+          {
+            tipo:'ENTRATA', canale:'TELEFONO', timestamp: Date.now()-300_000, mittente:'Cittadino', destinatario:'Sala Operativa',
+            contenuto:'Segnalata fitta colonna di fumo', priorita:'ALTA', segnalazioneId:2, interventoId:1, squadraId:null, operatore:'L. Neri',
+            protocollata:false, numeroProtocollo:null, allegati:[], note:''
+          },
+          {
+            tipo:'USCITA', canale:'RADIO', timestamp: Date.now()-120_000, mittente:'Sala Operativa', destinatario:'SQ-01',
+            contenuto:'Verificare perimetro nord', priorita:'MEDIA', segnalazioneId:2, interventoId:1, squadraId:1, operatore:'M. Rossi',
+            protocollata:true, numeroProtocollo:'PROT-2024-00001', allegati:[], note:''
+          }
+        ]);
+
+        await db.contatti.bulkAdd([
+          { tipologia:'ENTE', categoria:'VVF', nome:'Centrale Operativa', cognome:'', organizzazione:'VVF', ruolo:'Centrale', telefono:'115', cellulare:'', email:'', radio:'', fax:'', indirizzo:{}, note:'', reperibilita:[], tags:['emergenza'], preferito:true },
+          { tipologia:'ENTE', categoria:'SANITARIO', nome:'118', cognome:'', organizzazione:'AREU', ruolo:'Centrale', telefono:'118', cellulare:'', email:'', radio:'', fax:'', indirizzo:{}, note:'', reperibilita:[], tags:['emergenza'], preferito:true }
+        ]);
+      }
+    }
+
+    // ===========================
+    // Utils: Backup / CSV / Toast / Search
+    // ===========================
+    const ToastBus = (() => {
+      let id=0;
+      const list = Vue.ref([]);
+      function push(type,message,timeout=3500){
+        const nid = ++id; list.value.push({id:nid,type,message});
+        if(timeout>0) setTimeout(()=>remove(nid), timeout);
+      }
+      function remove(nid){ const i=list.value.findIndex(t=>t.id===nid); if(i>-1) list.value.splice(i,1); }
+      return {list, push, remove};
+    })();
+
+    async function exportFullDatabase(){
+      const data = { version:'1.0', exportDate:new Date().toISOString(), tables:{} };
+      const tables = ['segnalazioni','interventi','comunicazioni','squadre','puntiMappa','tasks','contatti','diarioSala','configurazioni'];
+      for(const t of tables){ data.tables[t] = await db[t].toArray(); }
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`thunder-backup-${dayjs().format('YYYY-MM-DD-HHmmss')}.json`; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportCSV(tableName, records){
+      if(!records || !records.length) return;
+      const headers = Object.keys(records[0]);
+      const csv = [headers.join(','), ...records.map(r => headers.map(h => {
+        const v = r[h];
+        if(typeof v === 'object') return JSON.stringify(v).replace(/,/g,';');
+        return String(v ?? '').replace(/,/g,';');
+      }).join(','))].join('\n');
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`${tableName}-${dayjs().format('YYYY-MM-DD')}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importDatabaseFromFile(file){
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if(!data.version || !data.tables) throw new Error('Formato file non valido');
+      if(!confirm('Sovrascrivere tutti i dati esistenti?')) return;
+      await db.delete(); // cancella DB
+      await db.open();   // riapre con lo schema attuale
+      for(const [table, rows] of Object.entries(data.tables)){
+        if(db[table]) await db[table].bulkAdd(rows);
+      }
+      ToastBus.push('success','Import completato');
+    }
+
+    async function globalSearch(query){
+      const q = (query||'').toLowerCase().trim();
+      if(!q) return [];
+      const results = [];
+
+      const segs = await db.segnalazioni
+        .filter(s => (s.codice||'').toLowerCase().includes(q) ||
+                     (s.descrizione||'').toLowerCase().includes(q) ||
+                     (s.localita?.indirizzo||'').toLowerCase().includes(q))
+        .toArray();
+      results.push(...segs.map(s => ({
+        type:'segnalazione', id:s.id, codice:s.codice, title:s.descrizione, subtitle:s.localita?.indirizzo||'', badge:s.stato, priority:s.priorita
+      })));
+
+      const ints = await db.interventi
+        .filter(i => (i.codice||'').toLowerCase().includes(q) || (i.descrizione||'').toLowerCase().includes(q))
+        .toArray();
+      results.push(...ints.map(i => ({
+        type:'intervento', id:i.id, codice:i.codice, title:i.descrizione, subtitle:`Segnalazione: ${i.segnalazioneId}`, badge:i.stato, priority:i.priorita
+      })));
+
+      const squads = await db.squadre
+        .filter(sq => (sq.codice||'').toLowerCase().includes(q) || (sq.nome||'').toLowerCase().includes(q))
+        .toArray();
+      results.push(...squads.map(sq => ({
+        type:'squadra', id:sq.id, title:sq.nome, subtitle:sq.specializzazione, badge:sq.stato
+      })));
+
+      const contacts = await db.contatti
+        .filter(c => (c.nome||'').toLowerCase().includes(q) ||
+                     (c.cognome||'').toLowerCase().includes(q) ||
+                     (c.organizzazione||'').toLowerCase().includes(q))
+        .toArray();
+      results.push(...contacts.map(c => ({
+        type:'contatto', id:c.id, title:`${c.nome||''} ${c.cognome||''}`.trim(), subtitle:c.organizzazione||'', badge:c.categoria
+      })));
+
+      return results;
+    }
+
+    // ===========================
+    // Pinia Stores
+    // ===========================
+    const { defineStore, createPinia } = Pinia;
+
+    const useSegnalazioniStore = defineStore('segnalazioni',{
+      state: () => ({
+        segnalazioni:[],
+        current:null,
+        filters:{ stato:[], priorita:[], tipologia:[], search:'' },
+        loading:false
+      }),
+      getters:{
+        filtered(state){
+          let res = state.segnalazioni.slice();
+          if(state.filters.stato.length) res = res.filter(s => state.filters.stato.includes(s.stato));
+          if(state.filters.priorita.length) res = res.filter(s => state.filters.priorita.includes(s.priorita));
+          if(state.filters.search){
+            const q = state.filters.search.toLowerCase();
+            res = res.filter(s => (s.codice||'').toLowerCase().includes(q) ||
+                                  (s.descrizione||'').toLowerCase().includes(q) ||
+                                  (s.localita?.indirizzo||'').toLowerCase().includes(q));
+          }
+          return res.sort((a,b) => b.dataCreazione - a.dataCreazione);
+        },
+        stats(state){
+          return {
+            totali: state.segnalazioni.length,
+            aperte: state.segnalazioni.filter(s=>s.stato==='APERTA').length,
+            inCorso: state.segnalazioni.filter(s=>s.stato==='IN_CORSO').length,
+            chiuse: state.segnalazioni.filter(s=>s.stato==='CHIUSA').length,
+            critiche: state.segnalazioni.filter(s=>s.priorita==='CRITICA').length
+          }
+        }
+      },
+      actions:{
+        async fetchAll(){ this.loading=true; try{ this.segnalazioni = await db.segnalazioni.toArray(); } finally{ this.loading=false; } },
+        async fetchById(id){ this.current = await db.segnalazioni.get(Number(id)); return this.current; },
+        async generateCodice(){
+          const anno = new Date().getFullYear();
+          const count = await db.segnalazioni.where('codice').startsWith(`SEG-${anno}`).count();
+          return `SEG-${anno}-${String(count+1).padStart(4,'0')}`;
+        },
+        async create(segn){
+          const codice = await this.generateCodice();
+          const now = Date.now();
+          const rec = { ...segn, codice, stato: 'APERTA', dataCreazione:now, dataAggiornamento:now, comunicazioniIds:[], allegati:[] };
+          const id = await db.segnalazioni.add(rec);
+          await this.fetchAll(); return id;
+        },
+        async update(id, updates){
+          await db.segnalazioni.update(Number(id), { ...updates, dataAggiornamento:Date.now() });
+          await this.fetchAll();
+        },
+        async remove(id){ await db.segnalazioni.delete(Number(id)); await this.fetchAll(); },
+        setFilter(type,value){ this.filters[type] = value; },
+        clearFilters(){ this.filters = { stato:[], priorita:[], tipologia:[], search:'' }; }
+      }
+    });
+
+    const useComunicazioniStore = defineStore('comunicazioni',{
+      state:()=>({ list:[], loading:false }),
+      actions:{
+        async fetchAll(){ this.loading=true; try{ this.list = await db.comunicazioni.orderBy('timestamp').reverse().toArray(); } finally{ this.loading=false; } },
+        async add(comm){ const rec = { ...comm, timestamp: Date.now() }; await db.comunicazioni.add(rec); await this.fetchAll(); }
+      },
+      getters:{
+        last24h(state){ const t=Date.now()-24*3600_000; return state.list.filter(c=>c.timestamp>=t); }
+      }
+    });
+
+    const useCountsStore = defineStore('counts',{
+      state:()=>({ segnalazioni:0, interventi:0, squadreTotali:0, squadreDisponibili:0 }),
+      actions:{
+        async refresh(){
+          this.segnalazioni = await db.segnalazioni.count();
+          this.interventi = await db.interventi.count();
+          const squads = await db.squadre.toArray();
+          this.squadreTotali = squads.length;
+          this.squadreDisponibili = squads.filter(s=>s.stato==='DISPONIBILE').length;
+        }
+      }
+    });
+
+    // ===========================
+    // Vue Components
+    // ===========================
+    const MapComponent = {
+      name:'MapComponent',
+      props:{ markers:Array, center:Object, zoom:Number, full:Boolean },
+      template:`
+        <div class="map-wrapper" :class="{'map-full': full}">
+          <div ref="container" class="map-container"></div>
+          <div class="map-controls">
+            <button class="map-control-btn" @click="centerMap">Centra</button>
+            <button class="map-control-btn" @click="toggleFullscreen">Fullscreen</button>
+          </div>
+        </div>
+      `,
+      emits:['marker-click','map-click'],
+      data(){ return { map:null, layer:null }; },
+      mounted(){ this.init(); },
+      watch:{
+        markers:{ immediate:false, deep:true, handler(){ this.renderMarkers(); } }
+      },
+      methods:{
+        init(){
+          const lat = this.center?.lat ?? 41.9028;
+          const lng = this.center?.lng ?? 12.4964;
+          const z = this.zoom ?? 6;
+          this.map = L.map(this.$refs.container).setView([lat,lng], z);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            attribution:'© OpenStreetMap contributors', maxZoom:19
+          }).addTo(this.map);
+          this.layer = L.layerGroup().addTo(this.map);
+          this.map.on('click', e => this.$emit('map-click', { lat:e.latlng.lat, lng:e.latlng.lng }));
+          this.renderMarkers();
+        },
+        renderMarkers(){
+          if(!this.layer) return;
+          this.layer.clearLayers();
+          (this.markers||[]).forEach(m => {
+            const icon = L.divIcon({
+              className:'custom-marker',
+              html:`<div class="marker-pin marker-${m.tipo}">${this.getIcon(m.tipo)}</div>`,
+              iconSize:[26,26], iconAnchor:[13,13]
+            });
+            const marker = L.marker([m.lat, m.lng], { icon }).addTo(this.layer);
+            const priBadge = m.priorita ? `<span style="background:#eee;border-radius:8px;padding:2px 6px;font-size:11px">${m.priorita}</span>` : '';
+            marker.bindPopup(`<div class="marker-popup">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <strong>${m.codice || m.etichetta || 'Elemento'}</strong>
+                ${priBadge}
+              </div>
+              <div style="margin-top:6px;font-size:13px">${m.descrizione || ''}</div>
+              <small>${m.indirizzo || ''}</small>
+            </div>`);
+            marker.on('click', ()=> this.$emit('marker-click', m));
+          });
+        },
+        getIcon(tipo){ return ({ SEGNALAZIONE:'⚠', INTERVENTO:'🛠', SQUADRA:'👥', POI:'📍' })[tipo] || '●'; },
+        centerMap(){
+          if(this.center) this.map.setView([this.center.lat, this.center.lng], this.zoom || 13);
+        },
+        toggleFullscreen(){
+          const el = this.$refs.container.parentElement;
+          if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen();
+        }
+      }
+    };
+
+    // Dashboard
+    const DashboardView = {
+      name:'DashboardView',
+      template:`
+        <div class="grid grid-3">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Situazione Generale</h3>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-3">
+                <div>
+                  <div class="text-tertiary">Segnalazioni Aperte</div>
+                  <div style="font-size:24px;font-weight:800">{{ stats.aperta }}</div>
+                </div>
+                <div>
+                  <div class="text-tertiary">Interventi Attivi</div>
+                  <div style="font-size:24px;font-weight:800">{{ counts.interventi }}</div>
+                </div>
+                <div>
+                  <div class="text-tertiary">Squadre Disponibili</div>
+                  <div style="font-size:24px;font-weight:800">{{ counts.squadreDisponibili }}</div>
+                </div>
+              </div>
+              <div class="mt-16">
+                <canvas ref="chart" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Timeline Tempo Reale (Comunicazioni)</h3>
+            </div>
+            <div class="card-body" style="max-height:260px; overflow:auto">
+              <div v-if="comms.loading" class="text-tertiary">Caricamento...</div>
+              <div v-else>
+                <div v-for="c in comms.last24h" :key="c.id" class="mb-12">
+                  <div class="chip">
+                    {{ dayjs(c.timestamp).format('HH:mm:ss') }} • {{ c.canale }} • {{ c.tipo }}
+                  </div>
+                  <div style="margin-top:6px">{{ c.contenuto }}</div>
+                  <div class="text-tertiary" style="font-size:12px">Da: {{ c.mittente }} → {{ c.destinatario }}</div>
+                </div>
+                <div v-if="comms.last24h.length === 0" class="text-tertiary">Nessuna comunicazione nelle ultime 24h</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column:auto">
+            <div class="card-header">
+              <h3 class="card-title">Mappa Situazione</h3>
+              <div class="card-actions"><button class="btn btn-sm" @click="$router.push('/mappa')">Apri Mappa</button></div>
+            </div>
+            <div class="card-body">
+              <MapComponent :markers="markers" :center="mapCenter" :zoom="6" @marker-click="onMarkerClick" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-3 mt-16">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Alert & Priorità</h3>
+            </div>
+            <div class="card-body">
+              <div v-if="critiche.length === 0" class="text-tertiary">Nessuna segnalazione critica.</div>
+              <div v-else>
+                <div v-for="s in critiche" :key="s.id" class="mb-8">
+                  <span class="badge badge-critical">CRITICA</span>
+                  <span class="mono" style="margin-left:8px">{{ s.codice }}</span>
+                  <div style="font-weight:600">{{ s.descrizione }}</div>
+                  <div class="text-tertiary">{{ s.localita?.comune }} - {{ s.localita?.indirizzo }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2">
+                <button class="btn btn-primary" @click="$router.push('/segnalazioni/new')">+ Nuova Segnalazione</button>
+                <button class="btn" @click="$router.push('/comunicazioni')">+ Nuova Comunicazione</button>
+                <button class="btn" @click="$router.push('/diario')">+ Voce Diario</button>
+                <button class="btn" @click="$router.push('/mappa')">Apri Mappa</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Prossimi Task</h3>
+            </div>
+            <div class="card-body">
+              <div class="text-tertiary">Modulo Task in arrivo (Fase 3)</div>
+            </div>
+          </div>
+        </div>
+      `,
+      components:{ MapComponent },
+      setup(){
+        const segStore = useSegnalazioniStore();
+        const commsStore = useComunicazioniStore();
+        const counts = useCountsStore();
+        const chartRef = Vue.ref(null);
+        const chartObj = Vue.ref(null);
+
+        const stats = Vue.computed(() => ({
+          aperta: segStore.segnalazioni.filter(s=>s.stato==='APERTA').length,
+          inCorso: segStore.segnalazioni.filter(s=>s.stato==='IN_CORSO').length
+        }));
+
+        const critiche = Vue.computed(() => segStore.segnalazioni.filter(s=>s.priorita==='CRITICA' && s.stato!=='CHIUSA'));
+
+        const markers = Vue.computed(() => {
+          const m1 = segStore.segnalazioni
+            .filter(s=>s.localita?.coordinate)
+            .map(s => ({
+              id:s.id, tipo:'SEGNALAZIONE', lat:s.localita.coordinate.lat, lng:s.localita.coordinate.lng,
+              codice:s.codice, priorita:s.priorita, descrizione:s.descrizione, indirizzo:s.localita?.indirizzo
+            }));
+          return m1;
+        });
+
+        const mapCenter = Vue.computed(() => ({lat: 43.5, lng: 11.3}));
+
+        function onMarkerClick(m){ /* optional action */ }
+
+        function renderChart(){
+          if(!chartRef.value) return;
+          const ctx = chartRef.value.getContext('2d');
+          const data = {
+            labels:['CRITICA','ALTA','MEDIA','BASSA'],
+            datasets:[{
+              label:'Segnalazioni',
+              data:[
+                segStore.segnalazioni.filter(s=>s.priorita==='CRITICA').length,
+                segStore.segnalazioni.filter(s=>s.priorita==='ALTA').length,
+                segStore.segnalazioni.filter(s=>s.priorita==='MEDIA').length,
+                segStore.segnalazioni.filter(s=>s.priorita==='BASSA').length,
+              ],
+              backgroundColor:['#dc2626','#f59e0b','#3b82f6','#10b981']
+            }]
+          };
+          if(chartObj.value){ chartObj.value.destroy(); }
+          chartObj.value = new Chart(ctx,{ type:'doughnut', data, options:{ plugins:{ legend:{ labels:{ color:'#e6e8eb' } } } } });
+        }
+
+        Vue.onMounted(async ()=>{
+          await segStore.fetchAll();
+          await commsStore.fetchAll();
+          await counts.refresh();
+          renderChart();
+        });
+
+        Vue.watch(() => segStore.segnalazioni.length, renderChart);
+
+        return {
+          counts, comms:commsStore, stats, critiche, markers, mapCenter, onMarkerClick, chart:chartRef, dayjs
+        }
+      }
+    };
+
+    // Segnalazioni: List
+    const SegnalazioniList = {
+      name:'SegnalazioniList',
+      template:`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Segnalazioni</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm" @click="$router.push('/segnalazioni/new')">+ Nuova</button>
+              <button class="btn btn-sm" @click="doExport">Export CSV</button>
+              <button class="btn btn-sm" @click="refresh">Aggiorna</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="grid grid-3">
+              <div class="form-group">
+                <label class="form-label">Ricerca</label>
+                <input class="form-input" v-model="filters.search" placeholder="Codice / Descrizione / Indirizzo" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stato</label>
+                <select class="form-select" v-model="stateFilter">
+                  <option value="">Tutti</option>
+                  <option>APERTA</option>
+                  <option>IN_CORSO</option>
+                  <option>SOSPESA</option>
+                  <option>CHIUSA</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Priorità</label>
+                <select class="form-select" v-model="prioFilter">
+                  <option value="">Tutte</option>
+                  <option>CRITICA</option><option>ALTA</option><option>MEDIA</option><option>BASSA</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-12" v-if="store.loading">Caricamento...</div>
+            <div class="mt-12" v-else>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Codice</th><th>Tipologia</th><th>Priorità</th><th>Stato</th><th>Comune</th><th>Indirizzo</th><th>Creazione</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="s in list" :key="s.id">
+                    <td class="mono">{{ s.codice }}</td>
+                    <td>{{ s.tipologia }}</td>
+                    <td>
+                      <span class="badge"
+                            :class="{
+                              'badge-critical': s.priorita==='CRITICA',
+                              'badge-high': s.priorita==='ALTA',
+                              'badge-medium': s.priorita==='MEDIA',
+                              'badge-low': s.priorita==='BASSA'
+                            }">{{ s.priorita }}</span>
+                    </td>
+                    <td>{{ s.stato }}</td>
+                    <td>{{ s.localita?.comune }}</td>
+                    <td>{{ s.localita?.indirizzo }}</td>
+                    <td>{{ dayjs(s.dataCreazione).format('DD/MM/YYYY HH:mm') }}</td>
+                    <td class="text-right">
+                      <button class="btn btn-sm" @click="$router.push('/segnalazioni/'+s.id)">Dettaglio</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="list.length===0" class="text-tertiary mt-12">Nessuna segnalazione trovata.</div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup(){
+        const store = useSegnalazioniStore();
+        const filters = Vue.ref({...store.filters});
+        const stateFilter = Vue.ref('');
+        const prioFilter = Vue.ref('');
+
+        Vue.watch([stateFilter, prioFilter, filters], ()=>{
+          store.setFilter('stato', stateFilter.value ? [stateFilter.value] : []);
+          store.setFilter('priorita', prioFilter.value ? [prioFilter.value] : []);
+          store.setFilter('search', filters.value.search || '');
+        }, { deep:true });
+
+        const list = Vue.computed(()=>store.filtered);
+
+        async function refresh(){ await store.fetchAll(); }
+        async function doExport(){ await exportCSV('segnalazioni', list.value); }
+
+        Vue.onMounted(refresh);
+
+        return { store, list, filters, stateFilter, prioFilter, refresh, doExport, dayjs };
+      }
+    };
+
+    // Segnalazioni: Form (New/Edit)
+    const SegnalazioniForm = {
+      name:'SegnalazioniForm',
+      template:`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ isEdit ? 'Modifica Segnalazione' : 'Nuova Segnalazione' }}</h3>
+            <div class="card-actions">
+              <button class="btn btn-sm" @click="$router.back()">Indietro</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form class="form" @submit.prevent="submit">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Tipologia</label>
+                  <input class="form-input" v-model="model.tipologia" placeholder="ALLAGAMENTO / INCENDIO / ..." required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Priorità</label>
+                  <select class="form-select" v-model="model.priorita" required>
+                    <option disabled value="">Seleziona</option>
+                    <option>CRITICA</option><option>ALTA</option><option>MEDIA</option><option>BASSA</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Richiedente - Nome</label>
+                  <input class="form-input" v-model="model.richiedente.nome" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Richiedente - Telefono</label>
+                  <input class="form-input" v-model="model.richiedente.telefono" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Descrizione</label>
+                <textarea class="form-textarea" v-model="model.descrizione" required></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Indirizzo</label>
+                  <input class="form-input" v-model="model.localita.indirizzo" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Comune</label>
+                  <input class="form-input" v-model="model.localita.comune" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Provincia</label>
+                  <input class="form-input" v-model="model.localita.provincia" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Coordinate (lat, lng)</label>
+                  <div class="form-row" style="grid-template-columns:1fr 1fr">
+                    <input class="form-input" v-model.number="model.localita.coordinate.lat" type="number" step="0.000001" placeholder="Latitudine" />
+                    <input class="form-input" v-model.number="model.localita.coordinate.lng" type="number" step="0.000001" placeholder="Longitudine" />
+                  </div>
+                  <div class="form-hint">Suggerimento: vai su "Mappa" e clicca per precompilare con ?lat=&lng=</div>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <button class="btn btn-secondary" type="button" @click="$router.back()">Annulla</button>
+                <button class="btn btn-primary" type="submit">{{ isEdit ? 'Salva' : 'Crea' }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `,
+      setup(){
+        const store = useSegnalazioniStore();
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
+        const isEdit = Vue.ref(false);
+        const model = Vue.reactive({
+          tipologia:'', priorita:'',
+          richiedente:{nome:'',telefono:'',riferimento:''},
+          descrizione:'',
+          localita:{indirizzo:'', comune:'', provincia:'', coordinate:{lat:null,lng:null}}
+        });
+
+        Vue.onMounted(async ()=>{
+          // Precompila da query string (es. ?lat=..&lng=..)
+          const lat = Number(route.query.lat||''); const lng = Number(route.query.lng||'');
+          if(!isNaN(lat) && !isNaN(lng)){ model.localita.coordinate.lat=lat; model.localita.coordinate.lng=lng; }
+          if(route.params.id){
+            isEdit.value = true;
+            const rec = await store.fetchById(route.params.id);
+            if(rec) Object.assign(model, JSON.parse(JSON.stringify(rec)));
+          }
+        });
+
+        async function submit(){
+          try{
+            if(isEdit.value){
+              await store.update(model.id, model);
+              ToastBus.push('success','Segnalazione aggiornata');
+              router.push('/segnalazioni/'+model.id);
+            }else{
+              const id = await store.create(model);
+              ToastBus.push('success','Segnalazione creata');
+              router.push('/segnalazioni/'+id);
             }
-        }).mount('#app');
-    </script>
+          }catch(e){ ToastBus.push('error','Errore salvataggio'); }
+        }
+
+        return { model, isEdit, dayjs, route, submit };
+      }
+    };
+
+    // Segnalazioni: Dettaglio
+    const SegnalazioniDetail = {
+      name:'SegnalazioniDetail',
+      template:`
+        <div v-if="!rec" class="card"><div class="card-body">Caricamento...</div></div>
+        <div v-else class="grid" style="grid-template-columns:1.2fr .8fr; gap:12px">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="mono" style="font-weight:800">{{ rec.codice }}</div>
+                <div class="mt-8">
+                  <span class="badge"
+                    :class="{
+                      'badge-critical': rec.priorita==='CRITICA',
+                      'badge-high': rec.priorita==='ALTA',
+                      'badge-medium': rec.priorita==='MEDIA',
+                      'badge-low': rec.priorita==='BASSA'
+                    }">{{ rec.priorita }}</span>
+                  <span class="chip">{{ rec.stato }}</span>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm" @click="$router.push('/segnalazioni/'+rec.id+'/edit')">Modifica</button>
+                <button class="btn btn-sm" @click="chiudi" v-if="rec.stato!=='CHIUSA'">Chiudi</button>
+                <button class="btn btn-sm btn-danger" @click="del">Elimina</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2">
+                <div>
+                  <div class="text-tertiary">Tipologia</div>
+                  <div style="font-weight:600">{{ rec.tipologia }}</div>
+                </div>
+                <div>
+                  <div class="text-tertiary">Creazione</div>
+                  <div>{{ dayjs(rec.dataCreazione).format('DD/MM/YYYY HH:mm') }}</div>
+                </div>
+                <div>
+                  <div class="text-tertiary">Richiedente</div>
+                  <div>{{ rec.richiedente?.nome }} • {{ rec.richiedente?.telefono }}</div>
+                </div>
+                <div>
+                  <div class="text-tertiary">Operatore</div>
+                  <div>{{ rec.operatoreCreazione || '—' }}</div>
+                </div>
+              </div>
+
+              <div class="mt-12">
+                <div class="text-tertiary">Descrizione</div>
+                <div>{{ rec.descrizione }}</div>
+              </div>
+
+              <div class="mt-12">
+                <div class="text-tertiary">Localizzazione</div>
+                <div>{{ rec.localita?.indirizzo }} • {{ rec.localita?.comune }} ({{ rec.localita?.provincia }})</div>
+              </div>
+
+              <div class="mt-12" v-if="hasCoords">
+                <MapComponent :markers="markers" :center="{lat:rec.localita.coordinate.lat, lng:rec.localita.coordinate.lng}" :zoom="13" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Azioni rapide</h3>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2">
+                <button class="btn" @click="creaIntervento">Crea Intervento</button>
+                <button class="btn" @click="aggiungiComunicazione">Aggiungi Comunicazione</button>
+              </div>
+              <div class="mt-12 text-tertiary">Comunicazioni correlate (prossimamente)</div>
+            </div>
+          </div>
+        </div>
+      `,
+      components:{ MapComponent },
+      setup(){
+        const store = useSegnalazioniStore();
+        const route = VueRouter.useRoute();
+        const router = VueRouter.useRouter();
+        const rec = Vue.ref(null);
+        const hasCoords = Vue.computed(()=>!!rec.value?.localita?.coordinate?.lat && !!rec.value?.localita?.coordinate?.lng);
+        const markers = Vue.computed(()=> hasCoords.value ? [{
+          tipo:'SEGNALAZIONE', lat: rec.value.localita.coordinate.lat, lng: rec.value.localita.coordinate.lng,
+          codice: rec.value.codice, priorita: rec.value.priorita, descrizione: rec.value.descrizione, indirizzo: rec.value.localita?.indirizzo
+        }] : []);
+
+        Vue.onMounted(async ()=>{
+          rec.value = await store.fetchById(route.params.id);
+        });
+
+        async function chiudi(){
+          if(!confirm('Chiudere la segnalazione?')) return;
+          await store.update(rec.value.id, { stato:'CHIUSA', dataChiusura: Date.now() });
+          ToastBus.push('success','Segnalazione chiusa');
+          rec.value = await store.fetchById(route.params.id);
+        }
+        async function del(){
+          if(!confirm('Eliminare la segnalazione?')) return;
+          await store.remove(rec.value.id);
+          ToastBus.push('success','Segnalazione eliminata');
+          router.push('/segnalazioni');
+        }
+        function creaIntervento(){ ToastBus.push('info','Wizard Intervento in arrivo'); }
+        function aggiungiComunicazione(){ router.push('/comunicazioni'); }
+
+        return { rec, hasCoords, markers, dayjs, chiudi, del, creaIntervento, aggiungiComunicazione };
+      }
+    };
+
+    // Comunicazioni View (registro + form)
+    const ComunicazioniView = {
+      name:'ComunicazioniView',
+      template:`
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Nuova Comunicazione</h3>
+            </div>
+            <div class="card-body">
+              <form class="form" @submit.prevent="submit">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" v-model="model.tipo" required>
+                      <option>ENTRATA</option><option>USCITA</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Canale</label>
+                    <select class="form-select" v-model="model.canale" required>
+                      <option>TELEFONO</option><option>RADIO</option><option>EMAIL</option><option>FAX</option><option>PERSONA</option><option>APP</option><option>ALTRO</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group"><label class="form-label">Mittente</label><input class="form-input" v-model="model.mittente" required /></div>
+                  <div class="form-group"><label class="form-label">Destinatario</label><input class="form-input" v-model="model.destinatario" required /></div>
+                </div>
+                <div class="form-group"><label class="form-label">Oggetto/Contenuto</label><textarea class="form-textarea" v-model="model.contenuto" required></textarea></div>
+                <div class="form-row">
+                  <div class="form-group"><label class="form-label">Priorità</label>
+                    <select class="form-select" v-model="model.priorita"><option>CRITICA</option><option>ALTA</option><option>MEDIA</option><option>BASSA</option></select>
+                  </div>
+                  <div class="form-group"><label class="form-label">Collega a Segnalazione (ID)</label><input class="form-input" type="number" v-model.number="model.segnalazioneId" /></div>
+                </div>
+                <div class="text-right">
+                  <button class="btn">Annulla</button>
+                  <button class="btn btn-primary" type="submit">Registra</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Registro Comunicazioni</h3>
+              <div class="card-actions">
+                <button class="btn btn-sm" @click="refresh">Aggiorna</button>
+              </div>
+            </div>
+            <div class="card-body" style="max-height:420px; overflow:auto">
+              <div v-if="store.loading" class="text-tertiary">Caricamento...</div>
+              <div v-else>
+                <div v-for="c in store.list" :key="c.id" class="mb-12">
+                  <div class="chip">
+                    {{ dayjs(c.timestamp).format('DD/MM HH:mm:ss') }} • {{ c.tipo }} • {{ c.canale }}
+                  </div>
+                  <div style="margin-top:6px">{{ c.contenuto }}</div>
+                  <div class="text-tertiary" style="font-size:12px">Da: {{ c.mittente }} → {{ c.destinatario }}</div>
+                  <div class="text-tertiary" style="font-size:12px" v-if="c.segnalazioneId">Segnalazione #{{ c.segnalazioneId }}</div>
+                </div>
+                <div v-if="store.list.length===0" class="text-tertiary">Nessuna comunicazione registrata.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup(){
+        const store = useComunicazioniStore();
+        const model = Vue.reactive({ tipo:'ENTRATA', canale:'TELEFONO', mittente:'', destinatario:'Sala Operativa', contenuto:'', priorita:'MEDIA', segnalazioneId:null });
+
+        async function refresh(){ await store.fetchAll(); }
+        async function submit(){
+          try{ await store.add(model); Object.assign(model, { tipo:'ENTRATA', canale:'TELEFONO', mittente:'', destinatario:'Sala Operativa', contenuto:'', priorita:'MEDIA', segnalazioneId:null }); ToastBus.push('success','Comunicazione registrata'); await refresh(); }
+          catch(e){ ToastBus.push('error','Errore registrazione'); }
+        }
+
+        Vue.onMounted(refresh);
+        return { store, model, refresh, submit, dayjs };
+      }
+    };
+
+    // Mappa View
+    const MappaView = {
+      name:'MappaView',
+      template:`
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Mappa Interattiva</h3>
+            <div class="card-actions text-right">
+              <span class="text-tertiary" style="font-size:12px">Clicca sulla mappa per creare una segnalazione nel punto</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <MapComponent :markers="markers" :center="center" :zoom="6" :full="true" @map-click="onMapClick" />
+          </div>
+        </div>
+      `,
+      components:{ MapComponent },
+      setup(){
+        const segStore = useSegnalazioniStore();
+        const router = VueRouter.useRouter();
+        const markers = Vue.computed(() => segStore.segnalazioni.filter(s=>s.localita?.coordinate).map(s=>({
+          id:s.id, tipo:'SEGNALAZIONE', lat:s.localita.coordinate.lat, lng:s.localita.coordinate.lng, codice:s.codice, priorita:s.priorita, descrizione:s.descrizione, indirizzo:s.localita?.indirizzo
+        })));
+        const center = Vue.ref({lat:43.8,lng:11});
+
+        function onMapClick(pos){
+          if(confirm(`Creare nuova segnalazione qui?\nLat: ${pos.lat.toFixed(6)} Lng: ${pos.lng.toFixed(6)}`)){
+            router.push({ path:'/segnalazioni/new', query:{lat:pos.lat, lng:pos.lng} });
+          }
+        }
+
+        Vue.onMounted(async ()=>{ await segStore.fetchAll(); });
+
+        return { markers, center, onMapClick };
+      }
+    };
+
+    // Placeholder views
+    const InterventiView = { template:`<div class="card"><div class="card-body">Modulo Interventi in arrivo (Fase 2)</div></div>` };
+    const SquadreView = { template:`<div class="card"><div class="card-body">Modulo Squadre in arrivo (Fase 2)</div></div>` };
+    const TasksView = { template:`<div class="card"><div class="card-body">Modulo Task in arrivo (Fase 3)</div></div>` };
+    const RubricaView = { template:`<div class="card"><div class="card-body">Modulo Rubrica in arrivo (Fase 3)</div></div>` };
+    const DiarioSalaView = { template:`<div class="card"><div class="card-body">Diario di Sala in arrivo (Fase 2)</div></div>` };
+    const AnalyticsView = { template:`<div class="card"><div class="card-body">Analytics & Report in arrivo (Fase 3)</div></div>` };
+
+    // Wrapper view Segnalazioni with children
+    const SegnalazioniView = {
+      template:`<router-view />`
+    };
+
+    // ===========================
+    // Router
+    // ===========================
+    const routes = [
+      { path:'/', redirect:'/dashboard' },
+      { path:'/dashboard', component: DashboardView },
+      { path:'/segnalazioni', component: SegnalazioniView, children:[
+        { path:'', component: SegnalazioniList },
+        { path:'new', component: SegnalazioniForm },
+        { path:':id', component: SegnalazioniDetail },
+        { path:':id/edit', component: SegnalazioniForm }
+      ]},
+      { path:'/interventi', component: InterventiView },
+      { path:'/comunicazioni', component: ComunicazioniView },
+      { path:'/squadre', component: SquadreView },
+      { path:'/mappa', component: MappaView },
+      { path:'/tasks', component: TasksView },
+      { path:'/rubrica', component: RubricaView },
+      { path:'/diario', component: DiarioSalaView },
+      { path:'/analytics', component: AnalyticsView },
+    ];
+    const router = VueRouter.createRouter({
+      history: VueRouter.createWebHashHistory(),
+      routes
+    });
+
+    // ===========================
+    // Root App
+    // ===========================
+    const app = Vue.createApp({
+      data:() => ({
+        time:{ now:'--:--:--', date:'', footer:'' },
+        currentUser:{ name:'M. Rossi', role:'Operatore' },
+        globalQuery:'',
+        searchModal:{ open:false, query:'', loading:false, results:[] },
+        breadcrumb:'Dashboard',
+      }),
+      computed:{
+        toasts(){ return ToastBus.list; },
+        counts(){ return useCountsStore(); },
+        headerStats(){
+          const c = useCountsStore();
+          return { segnalazioni:c.segnalazioni, interventi:c.interventi, squadreDisponibili:c.squadreDisponibili, squadreTotali:c.squadreTotali };
+        }
+      },
+      watch:{
+        '$route'(to){
+          const map = {
+            '/dashboard':'Dashboard', '/segnalazioni':'Segnalazioni', '/interventi':'Interventi',
+            '/comunicazioni':'Comunicazioni', '/squadre':'Squadre', '/mappa':'Mappa', '/tasks':'Task',
+            '/rubrica':'Rubrica', '/diario':'Diario Sala', '/analytics':'Analytics'
+          };
+          const m = Object.keys(map).find(k => to.path.startsWith(k));
+          this.breadcrumb = map[m] || 'Thunder';
+        }
+      },
+      methods:{
+        notify(type,msg){ ToastBus.push(type,msg); },
+        async exportFullDatabase(){ await exportFullDatabase(); ToastBus.push('success','Export completato'); },
+        async backupNow(){ await exportFullDatabase(); ToastBus.push('success','Backup scaricato'); },
+        openSearchModal(){ this.searchModal.open = true; this.searchModal.query = this.globalQuery || ''; this.performGlobalSearch(); },
+        closeSearchModal(){ this.searchModal.open = false; this.searchModal.results = []; },
+        async performGlobalSearch(){
+          this.searchModal.loading = true;
+          this.searchModal.results = await globalSearch(this.searchModal.query);
+          this.searchModal.loading = false;
+        },
+        goToSearchResult(r){
+          this.closeSearchModal();
+          if(r.type==='segnalazione') this.$router.push('/segnalazioni/'+r.id);
+          else if(r.type==='intervento') this.$router.push('/interventi'); // placeholder
+          else if(r.type==='squadra') this.$router.push('/squadre');
+          else if(r.type==='contatto') this.$router.push('/rubrica');
+        }
+      },
+      mounted(){
+        // Clock
+        const tick = () => {
+          this.time.now = dayjs().format('HH:mm:ss');
+          this.time.date = dayjs().format('dddd D MMMM YYYY');
+          this.time.footer = dayjs().format('DD/MM/YYYY HH:mm');
+        };
+        tick(); setInterval(tick, 1000);
+
+        // Ctrl+K apre ricerca
+        window.addEventListener('keydown', (e)=>{
+          if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); this.openSearchModal(); }
+          if(e.key==='Escape' && this.searchModal.open){ this.closeSearchModal(); }
+        });
+      }
+    });
+
+    // Init
+    (async () => {
+      await initializeSampleData();
+      const pinia = createPinia();
+      app.use(pinia);
+      app.use(router);
+      app.component('MapComponent', MapComponent);
+      app.mount('#app');
+
+      // Aggiorna contatori testata
+      const counts = useCountsStore();
+      await counts.refresh();
+
+      // Ricarica contatori al cambio route (grezzo, per MVP)
+      router.afterEach(async ()=> { await counts.refresh(); });
+    })();
+  </script>
 </body>
 </html>
